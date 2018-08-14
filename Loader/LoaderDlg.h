@@ -36,6 +36,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	CStatusBar	m_StatusBar;
 	CMscomm1 m_MSComm;
 	CFlashDownloadDlg m_flashDownloadDlg;
 	CFlashUploadDlg m_flashUploadDlg;
@@ -44,4 +45,6 @@ public:
 	CDialog* pDialog[3];
 	int m_CurTabSel;
 	afx_msg void OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult);
+	void SetDateTime();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
