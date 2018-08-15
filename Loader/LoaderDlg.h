@@ -8,6 +8,8 @@
 #include "FlashUploadDlg.h"
 #include "RFloadDlg.h"
 #include "afxcmn.h"
+#include "afxwin.h"
+#include "Dbt.h"
 
 // CLoaderDlg ¶Ô»°¿ò
 class CLoaderDlg : public CDialogEx
@@ -38,13 +40,27 @@ protected:
 public:
 	CStatusBar	m_StatusBar;
 	CMscomm1 m_MSComm;
+
 	CFlashDownloadDlg m_flashDownloadDlg;
 	CFlashUploadDlg m_flashUploadDlg;
 	CRFloadDlg m_rfloadDlg;
+
 	CTabCtrl m_tab;
 	CDialog* pDialog[3];
 	int m_CurTabSel;
 	afx_msg void OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD dwData);
 	void SetDateTime();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	void TraversalCom(void);
+	CComboBox m_ComboBoxCom;
+	CComboBox m_ComboBoxBaud;
+	CComboBox m_FlashSize;
+	CString comBaudRate;
+	int oldComNum;
+	afx_msg void OnCbnSelchangeComboBaud();
+	afx_msg void OnCbnSelchangeComboCom();
+	afx_msg void OnCbnSelchangeComboFlashsize();
+	DECLARE_EVENTSINK_MAP()
+	void OnCommMscomm1();
 };

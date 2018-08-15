@@ -8,9 +8,16 @@
 #include "afxdialogex.h"
 #include "mscomm1.h"
 
+using namespace std;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 //状态栏数组
 static UINT indicators[] =
 {
@@ -19,6 +26,7 @@ static UINT indicators[] =
 	ID_INDICATOR_DATE,
 	ID_INDICATOR_WEEK,
 	ID_INDICATOR_TIME,
+	ID_INDICATOR_FLASHSIZE,
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -62,6 +70,9 @@ CLoaderDlg::CLoaderDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_LOADER_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	oldComNum = 0;
+	//默认波特率57600
+	comBaudRate = _T("57600");
 }
 
 void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
@@ -69,14 +80,23 @@ void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_MSCOMM1, m_MSComm);
 	DDX_Control(pDX, IDC_TAB1, m_tab);
+	DDX_Control(pDX, IDC_COMBO_COM, m_ComboBoxCom);
+	DDX_Control(pDX, IDC_COMBO_BAUD, m_ComboBoxBaud);
+	DDX_Control(pDX, IDC_COMBO_FLASHSIZE, m_FlashSize);
 }
 
+//消息映射
 BEGIN_MESSAGE_MAP(CLoaderDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &CLoaderDlg::OnTcnSelchangeTab1)
 	ON_WM_TIMER()
+	
+	ON_WM_DEVICECHANGE()
+	ON_CBN_SELCHANGE(IDC_COMBO_BAUD, &CLoaderDlg::OnCbnSelchangeComboBaud)
+	ON_CBN_SELCHANGE(IDC_COMBO_COM, &CLoaderDlg::OnCbnSelchangeComboCom)
+	ON_CBN_SELCHANGE(IDC_COMBO_FLASHSIZE, &CLoaderDlg::OnCbnSelchangeComboFlashsize)
 END_MESSAGE_MAP()
 
 
@@ -148,18 +168,26 @@ BOOL CLoaderDlg::OnInitDialog()
 	{
 		m_StatusBar.Create(this);
 		m_StatusBar.SetIndicators(indicators, sizeof(indicators) / sizeof(UINT));
-		m_StatusBar.SetPaneInfo(0, ID_INDICATOR_COM, SBPS_NORMAL, 60);//SBPS_STRETCH
-		m_StatusBar.SetPaneInfo(1, ID_INDICATOR_SET, SBPS_STRETCH, 0);//SBPS_STRETCH
-		m_StatusBar.SetPaneInfo(2, ID_INDICATOR_DATE, SBPS_NORMAL, 120);//SBPS_NORMAL
-		m_StatusBar.SetPaneInfo(3, ID_INDICATOR_WEEK, SBPS_NORMAL, 60);//SBPS_NOBORDERS
-		m_StatusBar.SetPaneInfo(4, ID_INDICATOR_TIME, SBPS_NORMAL, 70);//SBPS_POPOUT
-		RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //放置位置
+		m_StatusBar.SetPaneInfo(0, ID_INDICATOR_COM, SBPS_POPOUT, 50);//SBPS_STRETCH
+		m_StatusBar.SetPaneInfo(1, ID_INDICATOR_SET, SBPS_POPOUT, 200);//SBPS_STRETCH
+		m_StatusBar.SetPaneInfo(2, ID_INDICATOR_DATE, SBPS_NORMAL, 80);//SBPS_NORMAL
+		m_StatusBar.SetPaneInfo(3, ID_INDICATOR_WEEK, SBPS_POPOUT, 85);//SBPS_NOBORDERS
+		m_StatusBar.SetPaneInfo(4, ID_INDICATOR_TIME, SBPS_POPOUT,70);//SBPS_POPOUT
+		m_StatusBar.SetPaneInfo(5, ID_INDICATOR_FLASHSIZE, SBPS_POPOUT, 160);//SBPS_STRETCH
+
+		RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 130); //放置位置
 		m_StatusBar.SetPaneText(0, _T("COM??"));
-		//m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
+		m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
+		m_StatusBar.SetPaneText(5, _T("FlashSize??"));
+		//创建定时器
 		SetDateTime();
-		SetTimer(1, 1000, NULL);
+		//启动定时器
+		SetTimer(1, 1000, NULL);//1000ms
 	}
 
+	TraversalCom();
+	//波特率默认显示索引为5的项 57600
+	m_ComboBoxBaud.SetCurSel(5);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -223,6 +251,10 @@ void CLoaderDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 	*pResult = 0;
 }
 
+
+/*
+状态栏相关函数
+*/
 //显示日期
 void CLoaderDlg::SetDateTime()
 {
@@ -249,14 +281,191 @@ void CLoaderDlg::SetDateTime()
 	}
 	m_StatusBar.SetPaneText(3, str);
 }
-
-
+//设置定时器显示时间
 void CLoaderDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CString str;
 	str = ((CTime)(CTime::GetCurrentTime())).Format(_T("%H:%M:%S"));
 	m_StatusBar.SetPaneText(4, str);
-
 	CDialogEx::OnTimer(nIDEvent);
 }
+
+
+/*
+串口相关函数
+*/
+
+//遍历串口
+void CLoaderDlg::TraversalCom(void)
+{
+#if 0
+
+	int total, num, place;
+	num = m_ComboBoxCom.GetCount();
+	for (int i = num - 1; i > 0; i--)
+	{
+
+		m_ComboBoxCom.DeleteString(i);
+	}
+
+	CArray<SSerInfo, SSerInfo&> asi;
+	EnumSerialPorts(asi, FALSE);
+	total = asi.GetSize();
+
+	if (total > 0)
+	{
+		CString str;
+		for (int i = 0; i<total; i++)
+		{
+			str = asi[i].strFriendlyName;
+			place = str.Find(_T("COM"));
+			num = _ttoi(str.Mid(place + 3, 2));
+			if (num > 16)
+			{
+				continue;
+			}
+			if (num > 9)
+			{
+				str = str.Mid(place, 5);
+			}
+			else
+			{
+				str = str.Mid(place, 4);
+			}
+
+			if (asi[i].strFriendlyName.Find(_T("USB")) != -1)
+			{
+				str += _T("-USB");
+			}
+			m_ComboBoxCom.AddString(str);
+		}
+	}
+	else
+	{
+		m_ComboBoxCom.AddString(_T("没有可用的串口"));
+	}
+
+	m_ComboBoxCom.SetCurSel(0);
+
+#else
+
+	int nCount = m_ComboBoxCom.GetCount();
+	for (int i = nCount - 1; i > 0; i--)
+	{
+		m_ComboBoxCom.DeleteString(i);
+	}
+	HKEY    hKey;
+	CString str;
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("Hardware\\DeviceMap\\SerialComm"), NULL, KEY_READ, &hKey) == ERROR_SUCCESS)
+	{
+		TCHAR szPortName[256], szComName[256];
+		DWORD dwLong, dwSize;
+		nCount = 0;
+		while (1)
+		{
+			dwLong = dwSize = 256;
+			if (RegEnumValue(hKey, nCount, szPortName, &dwLong, NULL, NULL, (PUCHAR)szComName, &dwSize) == ERROR_NO_MORE_ITEMS)
+				break;
+
+			str.Format(_T("%s"), szComName);
+			m_ComboBoxCom.AddString(szComName);
+			nCount++;
+		}
+		RegCloseKey(hKey);
+	}
+	else
+	{
+		m_ComboBoxCom.AddString(_T("没有可用的串口"));
+	}
+#endif
+}
+//更换设备重新遍历串口
+BOOL CLoaderDlg::OnDeviceChange(UINT nEventType, DWORD dwData)
+{
+	//https://blog.csdn.net/dinjay/article/details/38320619
+	switch (nEventType)
+	{
+	case DBT_DEVICEREMOVECOMPLETE:
+	case DBT_DEVICEARRIVAL:
+		TraversalCom();
+		break;
+	default:
+		break;
+	}
+	return TRUE;
+}
+//串口组合框处理函数
+void CLoaderDlg::OnCbnSelchangeComboCom()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	//把原先使用的串口关闭
+	if (oldComNum)
+	{
+		m_MSComm.put_PortOpen(FALSE);
+	}
+	CString strCom;
+	m_ComboBoxCom.GetLBText(m_ComboBoxCom.GetCurSel(), strCom);
+	if (strCom.Find(_T("COM")) == -1)
+	{
+		MessageBox(_T("非法串口, 请检查后重试"), _T("友情提示"), MB_OK | MB_ICONWARNING);
+		oldComNum = 0;
+		m_StatusBar.SetPaneText(0, _T("COM??"));
+		return;
+	}
+
+	short newComNum = _ttoi(strCom.Mid(3));
+
+	m_MSComm.put_CommPort(newComNum);
+
+	if (m_MSComm.get_PortOpen())
+	{
+		MessageBox(_T("串口被占用, 请检查后重试"), _T("友情提示"), MB_OK | MB_ICONWARNING);
+		m_MSComm.put_PortOpen(FALSE);
+		m_StatusBar.SetPaneText(0, _T("COM??"));
+		oldComNum = 0;
+		return;
+	}
+
+	//设置串口参数
+	m_MSComm.put_Settings(comBaudRate + _T(",n,8,1")); //波特率 无校验 数据位 停止位
+	m_MSComm.put_InputMode(1); //输入方式为二级制方式
+	m_MSComm.put_InputLen(0); //设置当前缓冲区长度 
+	m_MSComm.put_InBufferSize(1024); //设置输入缓冲区
+	m_MSComm.put_InBufferCount(0);
+	m_MSComm.put_OutBufferSize(1024); //设置输出缓冲区
+	m_MSComm.put_OutBufferCount(0);
+	m_MSComm.put_RThreshold(1); //每当接收缓冲区有个字符则接收串口数据
+	m_MSComm.put_PortOpen(TRUE); //打开串口
+
+	m_StatusBar.SetPaneText(0, strCom);
+	oldComNum = newComNum;
+}
+//波特率组合框处理函数
+void CLoaderDlg::OnCbnSelchangeComboBaud()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	int index = m_ComboBoxBaud.GetCurSel();
+	m_ComboBoxBaud.GetLBText(index, comBaudRate);
+	//TRACE(comBaudRate);
+	m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
+}
+//FlashSize组合框处理函数
+void CLoaderDlg::OnCbnSelchangeComboFlashsize()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CString strFlashSize;
+	int index = m_FlashSize.GetCurSel();
+	m_FlashSize.GetLBText(index, strFlashSize);
+	m_StatusBar.SetPaneText(5, _T("FlashSize:")+strFlashSize);
+}
+
+//串口事件处理程序
+BEGIN_EVENTSINK_MAP(CLoaderDlg, CDialogEx)
+	ON_EVENT(CLoaderDlg, IDC_MSCOMM1, 1, CLoaderDlg::OnCommMscomm1, VTS_NONE)
+END_EVENTSINK_MAP()
+void CLoaderDlg::OnCommMscomm1()
+{
+	// TODO: 在此处添加消息处理程序代码
+}
+
