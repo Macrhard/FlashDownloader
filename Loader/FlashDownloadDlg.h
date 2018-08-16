@@ -20,7 +20,7 @@ public:
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
-
+	
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedButtonOpne1();
@@ -50,4 +50,20 @@ public:
 	CButton m_check7;
 	CButton m_check8;
 	afx_msg void OnBnClickedButtonClnall();
+	afx_msg void OnBnClickedButtonCombine();
+	DWORD ReadFile(CString filePath, int addIndex, char * combinFile, DWORD head);
+	DWORD ReadFile(CString filePath, int addIndex, char* combinFile);
+	BYTE * ReadFile(CString filePath, int addIndex);
+	void GetFilePath(void);
+	int ReturnFileType(CString filePath);
+	void ThrowTips(int tipsIndex);
+	void WriteFile(char* pszFileName);
+	CEdit m_path2;
+	CEdit m_path1;
+	CEdit m_path3;
+	CEdit m_path4;
+	CEdit m_path5;
+	CEdit m_path6;
+	CEdit m_path7;
+	CEdit m_path8;
 };

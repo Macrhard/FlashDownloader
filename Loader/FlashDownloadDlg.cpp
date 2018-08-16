@@ -14,14 +14,14 @@ CString Addr[8] = { NULL };
 
 enum _UartResponse
 {
-	UART_OK = 0x00,
-	UART_BOOT = 0x01,	 /* uboot       */
-	UART_ANDES = 0x02,  /* adnes */
-	UART_XIP = 0x03,    /* xip     */
-	UART_ANDES1 = 0x04, /* andes1   */
-	UART_XIP1 = 0x05,	/*xip1*/
-	UART_NV = 0x06,
-	UART_FAIL = 0xFF
+	OK = 0x00,
+	UBOOT = 0x01,	 /* uboot       */
+	ANDES = 0x02,  /* adnes */
+	XIP = 0x03,    /* xip     */
+	ANDES1 = 0x04, /* andes1   */
+	XIP1 = 0x05,	/*xip1*/
+	NV = 0x06,
+	FAIL = 0xFF
 }UartResp, fileType;
 enum _UartStatus
 {
@@ -71,6 +71,16 @@ void CFlashDownloadDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK6, m_check6);
 	DDX_Control(pDX, IDC_CHECK7, m_check7);
 	DDX_Control(pDX, IDC_CHECK8, m_check8);
+	//  DDX_Control(pDX, IDC_EDIT_PATH1, m_path);
+	DDX_Control(pDX, IDC_EDIT_PATH2, m_path2);
+	//  DDX_Control(pDX, IDC_EDIT_PATH1, path1);
+	DDX_Control(pDX, IDC_EDIT_PATH1, m_path1);
+	DDX_Control(pDX, IDC_EDIT_PATH3, m_path3);
+	DDX_Control(pDX, IDC_EDIT_PATH4, m_path4);
+	DDX_Control(pDX, IDC_EDIT_PATH5, m_path5);
+	DDX_Control(pDX, IDC_EDIT_PATH6, m_path6);
+	DDX_Control(pDX, IDC_EDIT_PATH7, m_path7);
+	DDX_Control(pDX, IDC_EDIT_PATH8, m_path8);
 }
 
 
@@ -92,6 +102,7 @@ BEGIN_MESSAGE_MAP(CFlashDownloadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_CLN7, &CFlashDownloadDlg::OnBnClickedButtonCln7)
 	ON_BN_CLICKED(IDC_BUTTON_CLN8, &CFlashDownloadDlg::OnBnClickedButtonCln8)
 	ON_BN_CLICKED(IDC_BUTTON_CLNALL, &CFlashDownloadDlg::OnBnClickedButtonClnall)
+	ON_BN_CLICKED(IDC_BUTTON_COMBINE, &CFlashDownloadDlg::OnBnClickedButtonCombine)
 END_MESSAGE_MAP()
 
 
@@ -261,7 +272,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		if (option.Find(_T("uboot")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_BOOT;
+			fileInfo[index].fileType = UBOOT;
 			Addr[index] = GetConfigInfo(_T("address"), _T("uboot"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -269,7 +280,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("andes")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_ANDES;
+			fileInfo[index].fileType = ANDES;
 			Addr[index] = GetConfigInfo(_T("address"), _T("andes"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -277,7 +288,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("xip")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_XIP;
+			fileInfo[index].fileType = XIP;
 			Addr[index] = GetConfigInfo(_T("address"), _T("xip"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -285,7 +296,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("andes1")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_ANDES1;
+			fileInfo[index].fileType = ANDES1;
 			Addr[index] = GetConfigInfo(_T("address"), _T("andes1"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -293,7 +304,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("xip1")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_XIP1;
+			fileInfo[index].fileType = XIP1;
 			Addr[index] = GetConfigInfo(_T("address"), _T("xip1"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -301,7 +312,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("nv")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UART_NV;
+			fileInfo[index].fileType = NV;
 			Addr[index] = GetConfigInfo(_T("address"), _T("nv"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -343,4 +354,198 @@ void CFlashDownloadDlg::OnBnClickedButtonClnall()
 	OnBnClickedButtonCln6();
 	OnBnClickedButtonCln7();
 	OnBnClickedButtonCln8();
+}
+
+
+void CFlashDownloadDlg::OnBnClickedButtonCombine()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	char* combineFile = (char*) malloc(0x1048510);//
+	DWORD head = 0;
+	GetFilePath();
+	for (int i = 0; i < 8; i++)
+	{
+		if (Path[i] == "")
+		{
+			continue;
+		}
+		head = ReadFile(Path[i], i, combineFile,head);
+	}
+	CFile combineBinfile(_T("f:\\multibinCombineFile.bin"), CFile::modeCreate|CFile::modeWrite);
+	combineBinfile.Write(combineFile,head);
+	combineBinfile.Close();
+	free(combineFile);
+}
+
+DWORD CFlashDownloadDlg::ReadFile(CString filePath,int addIndex,char* combinFile, DWORD head)
+{
+	
+	BYTE *fileBuffer = NULL;
+	DWORD fileLength;
+	int fileType;
+	fileType = ReturnFileType(filePath);
+
+	CFile binfileStream(filePath, CFile::modeRead | CFile::shareDenyWrite);
+	fileLength = binfileStream.GetLength();
+	fileBuffer = new BYTE[fileLength];
+	binfileStream.Read(fileBuffer, fileLength);
+	binfileStream.Close();
+	if (fileBuffer == NULL)
+	{
+		//TODO error deal
+		ThrowException(0);
+	}
+
+
+	BYTE myByteArray[12] = { 0 };
+	myByteArray[0] = (BYTE)(fileType);
+	myByteArray[1] = 0;
+	myByteArray[2] = 0;
+	myByteArray[3] = 0;
+	myByteArray[4] = (BYTE)(fileInfo[addIndex].fileAddr);
+	myByteArray[5] = (BYTE)((fileInfo[addIndex].fileAddr)>>8);
+	myByteArray[6] = (BYTE)((fileInfo[addIndex].fileAddr)>>16);
+	myByteArray[7] = (BYTE)((fileInfo[addIndex].fileAddr)>>24);
+	myByteArray[8] = (BYTE)(fileLength);
+	myByteArray[9] = (BYTE)(fileLength >> 8);
+	myByteArray[10] = (BYTE)(fileLength >> 16);
+	myByteArray[10] = (BYTE)(fileLength >> 24);
+	memcpy((combinFile+head), myByteArray,12);
+	memcpy(((combinFile + head) + 12), fileBuffer, fileLength);
+	head = head + 12 + fileLength;
+	return head;
+
+}
+
+
+
+//保存显示在路径对话框中并且打勾的文件路径 到Path[]中
+void CFlashDownloadDlg::GetFilePath(void)
+{
+	if (m_check1.GetCheck() == 1)
+	{
+		m_path1.GetWindowText(Path[0]);
+	}
+	else
+	{
+		Path[0] = "";
+	}
+
+	if (m_check2.GetCheck() == 1)
+	{
+		m_path2.GetWindowText(Path[1]);
+	}
+	else
+	{
+		Path[1] = "";
+	}
+
+	if (m_check3.GetCheck() == 1)
+	{
+		m_path3.GetWindowText(Path[2]);
+	}
+	else
+	{
+		Path[2] = "";
+	}
+
+	if (m_check4.GetCheck() == 1)
+	{
+		m_path4.GetWindowText(Path[3]);
+	}
+	else
+	{
+		Path[3] = "";
+	}
+
+	if (m_check5.GetCheck() == 1)
+	{
+		m_path5.GetWindowText(Path[4]);
+	}
+	else
+	{
+		Path[4] = "";
+	}
+
+	if (m_check6.GetCheck() == 1)
+	{
+		m_path6.GetWindowText(Path[5]);
+	}
+	else
+	{
+		Path[5] = "";
+	}
+
+	if (m_check7.GetCheck() == 1)
+	{
+		m_path7.GetWindowText(Path[6]);
+	}
+	else
+	{
+		Path[6] = "";
+	}
+
+	if (m_check8.GetCheck() == 1)
+	{
+		m_path8.GetWindowText(Path[7]);
+	}
+	else
+	{
+		Path[7] = "";
+	}
+}
+
+//返回文件类型
+int CFlashDownloadDlg::ReturnFileType(CString filePath)
+{
+	filePath.MakeLower();
+	
+	if (filePath.Find(_T("uboot")) != -1)
+	{
+		return UBOOT;
+	}
+	else if (filePath.Find(_T("andes")) != -1)
+	{
+		if (filePath.Find(_T("andes1")) != -1)
+		{
+			return ANDES1;
+		}
+		else
+		{
+			return ANDES;
+
+		}
+	}
+	else if (filePath.Find(_T("xip")) != -1)
+	{
+		if (filePath.Find(_T("xip1")) != -1)
+		{
+			return ANDES1;
+		}
+		else
+		{
+			return XIP;
+
+		}
+	}
+	else if(filePath.Find(_T("nv")) != -1)
+	{
+		return NV;
+	}
+
+}
+
+void CFlashDownloadDlg::ThrowTips(int tipsIndex)
+{
+	switch (tipsIndex)
+	{
+	case 1:
+		MessageBox(_T("请选择要下载的文件"), _T("Tips"), MB_OK | MB_ICONWARNING);
+		EnableWindow();
+		break;
+	default:
+		MessageBox(_T("未知错误"), _T("Tips"), MB_OK | MB_ICONWARNING);
+		EnableWindow();
+		break;
+	}
 }
