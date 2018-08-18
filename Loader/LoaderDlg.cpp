@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "Loader.h"
-#include "LoaderDlg.h"
+//#include "LoaderDlg.h"
 #include "afxdialogex.h"
 #include "mscomm1.h"
 
@@ -17,8 +17,10 @@ using namespace std;
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
+//CFlashDownloadDlg *downloadChildDlg = new CFlashDownloadDlg();
 //状态栏数组
+
+CLoaderDlg *g_pMainDlg = NULL;
 static UINT indicators[] =
 {
 	ID_INDICATOR_COM,
@@ -69,10 +71,13 @@ END_MESSAGE_MAP()
 CLoaderDlg::CLoaderDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_LOADER_DIALOG, pParent)
 {
+	
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	oldComNum = 0;
+	g_pMainDlg = this;
 	//默认波特率57600
 	comBaudRate = _T("57600");
+	
 }
 
 void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
@@ -85,18 +90,21 @@ void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_FLASHSIZE, m_FlashSize);
 }
 
-//消息映射
+//消息映射宏
 BEGIN_MESSAGE_MAP(CLoaderDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &CLoaderDlg::OnTcnSelchangeTab1)
 	ON_WM_TIMER()
-	
+
 	ON_WM_DEVICECHANGE()
 	ON_CBN_SELCHANGE(IDC_COMBO_BAUD, &CLoaderDlg::OnCbnSelchangeComboBaud)
 	ON_CBN_SELCHANGE(IDC_COMBO_COM, &CLoaderDlg::OnCbnSelchangeComboCom)
 	ON_CBN_SELCHANGE(IDC_COMBO_FLASHSIZE, &CLoaderDlg::OnCbnSelchangeComboFlashsize)
+	
+	//自定义消息
+	ON_MESSAGE(WM_MAIN_MSG, &CLoaderDlg::OnMainMsg)
 END_MESSAGE_MAP()
 
 
@@ -408,19 +416,16 @@ void CLoaderDlg::OnCbnSelchangeComboCom()
 	m_ComboBoxCom.GetLBText(m_ComboBoxCom.GetCurSel(), strCom);
 	if (strCom.Find(_T("COM")) == -1)
 	{
-		MessageBox(_T("非法串口, 请检查后重试"), _T("友情提示"), MB_OK | MB_ICONWARNING);
+		MessageBox(_T("Illegal serial port, please check it"), _T("Tips"), MB_OK | MB_ICONWARNING);
 		oldComNum = 0;
 		m_StatusBar.SetPaneText(0, _T("COM??"));
 		return;
 	}
-
 	short newComNum = _ttoi(strCom.Mid(3));
-
 	m_MSComm.put_CommPort(newComNum);
-
 	if (m_MSComm.get_PortOpen())
 	{
-		MessageBox(_T("串口被占用, 请检查后重试"), _T("友情提示"), MB_OK | MB_ICONWARNING);
+		MessageBox(_T("The serial port is occupied, please check it"), _T("友情提示"), MB_OK | MB_ICONWARNING);
 		m_MSComm.put_PortOpen(FALSE);
 		m_StatusBar.SetPaneText(0, _T("COM??"));
 		oldComNum = 0;
@@ -440,6 +445,8 @@ void CLoaderDlg::OnCbnSelchangeComboCom()
 
 	m_StatusBar.SetPaneText(0, strCom);
 	oldComNum = newComNum;
+	/*m_MSComm.put_Output(COleVariant(_T("cnys")));*/
+	/*downloadChildDlg->OnBnClickedButtonDownload.ChildoldComNum = oldComNum;*/
 }
 //波特率组合框处理函数
 void CLoaderDlg::OnCbnSelchangeComboBaud()
@@ -460,6 +467,11 @@ void CLoaderDlg::OnCbnSelchangeComboFlashsize()
 	m_StatusBar.SetPaneText(5, _T("FlashSize:")+strFlashSize);
 }
 
+afx_msg LRESULT CLoaderDlg::OnMainMsg(WPARAM wParam, LPARAM lParam)
+{
+	return 0;
+}
+
 //串口事件处理程序
 BEGIN_EVENTSINK_MAP(CLoaderDlg, CDialogEx)
 	ON_EVENT(CLoaderDlg, IDC_MSCOMM1, 1, CLoaderDlg::OnCommMscomm1, VTS_NONE)
@@ -467,5 +479,22 @@ END_EVENTSINK_MAP()
 void CLoaderDlg::OnCommMscomm1()
 {
 	// TODO: 在此处添加消息处理程序代码
-}
+	VARIANT variant_inp;
+	COleSafeArray safearray_inp;
+	LONG  k;
 
+	if (m_MSComm.get_CommEvent() == 2) //事件值为2表示接收缓冲区内有字符  
+	{
+		variant_inp = m_MSComm.get_Input(); // 读缓冲区字符到variant_inp
+		safearray_inp = variant_inp; //VARIANT类型变量转换为ColeSafeArray型变量
+		uartLen = safearray_inp.GetOneDimSize();//得到有效数据长度
+		for (k = 0; k < uartLen; k++)
+		{
+			safearray_inp.GetElement(&k, rxdata + k); //转换为BYTE型数组
+		}
+
+		//确定当前驻留在接收缓冲区等待被取出字符数量，
+		//设置为0，接收缓冲区的内容将被清除；
+		m_MSComm.put_InBufferCount(0);
+	}
+}

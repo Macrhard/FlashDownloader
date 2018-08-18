@@ -81,6 +81,8 @@ void CFlashDownloadDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_PATH6, m_path6);
 	DDX_Control(pDX, IDC_EDIT_PATH7, m_path7);
 	DDX_Control(pDX, IDC_EDIT_PATH8, m_path8);
+	DDX_Control(pDX, IDC_LIST1, m_ListboxLog);
+	DDX_Control(pDX, IDC_PROGRESS1, m_Progress);
 }
 
 
@@ -103,6 +105,9 @@ BEGIN_MESSAGE_MAP(CFlashDownloadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_CLN8, &CFlashDownloadDlg::OnBnClickedButtonCln8)
 	ON_BN_CLICKED(IDC_BUTTON_CLNALL, &CFlashDownloadDlg::OnBnClickedButtonClnall)
 	ON_BN_CLICKED(IDC_BUTTON_COMBINE, &CFlashDownloadDlg::OnBnClickedButtonCombine)
+	ON_BN_CLICKED(IDC_BUTTON_DOWNLOAD, &CFlashDownloadDlg::OnBnClickedButtonDownload)
+	//自定义消息
+	ON_MESSAGE(WM_DOWNLOAD_MSG, &CFlashDownloadDlg::OnDownloadMsg)
 END_MESSAGE_MAP()
 
 
@@ -532,7 +537,7 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 	{
 		return NV;
 	}
-
+	return 0;
 }
 
 void CFlashDownloadDlg::ThrowTips(int tipsIndex)
@@ -548,4 +553,50 @@ void CFlashDownloadDlg::ThrowTips(int tipsIndex)
 		EnableWindow();
 		break;
 	}
+}
+
+void CFlashDownloadDlg::OnBnClickedButtonDownload()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	LoadType = Download;
+	GetFilePath();
+	int fileCount = 0;
+	for (int cnt = 0; cnt < 8; cnt++)
+	{
+		if (Path[cnt] != "")
+		{
+			fileCount++;
+		}
+	}
+	if (fileCount < 1)
+	{
+		MessageBox(_T("Please selcet the file to download"), _T("Tips"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+	if (g_pMainDlg->oldComNum == 0)
+	{
+		MessageBox(_T("Please selcet a appropriate serial port"), _T("Tips"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+
+	m_ListboxLog.ResetContent();//清空Log框中的内容
+	m_ListboxLog.AddString(_T("+ Start the download"));
+	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+	m_Progress.SetPos(0);
+	pUartThread = AfxBeginThread(UartDownload, this, THREAD_PRIORITY_NORMAL, 0, 0);
+}
+//CLoaderDlg *pMainDlg = (CLoaderDlg*)GetParent()->GetParent();
+UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
+{
+	
+	
+	g_pMainDlg->SendSncy();
+	CFlashDownloadDlg *ptr = (CFlashDownloadDlg*)pParam;
+
+	return 0;
+}
+
+afx_msg LRESULT CFlashDownloadDlg::OnDownloadMsg(WPARAM wParam, LPARAM lParam)
+{
+	return 0;
 }

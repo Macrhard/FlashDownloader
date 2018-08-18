@@ -1,7 +1,12 @@
 #pragma once
+
 #include "afxwin.h"
+#include "afxcmn.h"
 
 
+
+
+//#include "LoaderDlg.h"
 
 // CFlashDownloadDlg ¶Ô»°¿ò
 
@@ -52,12 +57,10 @@ public:
 	afx_msg void OnBnClickedButtonClnall();
 	afx_msg void OnBnClickedButtonCombine();
 	DWORD ReadFile(CString filePath, int addIndex, char * combinFile, DWORD head);
-	DWORD ReadFile(CString filePath, int addIndex, char* combinFile);
-	BYTE * ReadFile(CString filePath, int addIndex);
 	void GetFilePath(void);
 	int ReturnFileType(CString filePath);
 	void ThrowTips(int tipsIndex);
-	void WriteFile(char* pszFileName);
+	//void WriteFile(char* pszFileName);
 	CEdit m_path2;
 	CEdit m_path1;
 	CEdit m_path3;
@@ -66,4 +69,12 @@ public:
 	CEdit m_path6;
 	CEdit m_path7;
 	CEdit m_path8;
+	afx_msg void OnBnClickedButtonDownload();
+	static UINT UartDownload(LPVOID pParam);
+	int ChildoldComNum;
+	CListBox m_ListboxLog;
+	CProgressCtrl m_Progress;
+	CWinThread* pUartThread;
+protected:
+	afx_msg LRESULT OnDownloadMsg(WPARAM wParam, LPARAM lParam);
 };

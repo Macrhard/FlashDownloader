@@ -9,8 +9,15 @@
 #endif
 
 #include "resource.h"		// 主符号
+#include "FlashDownloadDlg.h"
+#include "FlashUploadDlg.h"
+#include "RFloadDlg.h"
+#include "LoaderDlg.h"
 
 
+#define WM_MAIN_MSG WM_USER+0x1001
+#define WM_DOWNLOAD_MSG WM_USER+0x2001
+extern CLoaderDlg *g_pMainDlg;
 // CLoaderApp: 
 // 有关此类的实现，请参阅 Loader.cpp
 //

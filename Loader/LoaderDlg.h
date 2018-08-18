@@ -4,12 +4,12 @@
 
 #pragma once
 #include "mscomm1.h"
-#include "FlashDownloadDlg.h"
-#include "FlashUploadDlg.h"
-#include "RFloadDlg.h"
 #include "afxcmn.h"
 #include "afxwin.h"
 #include "Dbt.h"
+//#include "FlashDownloadDlg.h"
+//#include "FlashUploadDlg.h"
+//#include "RFloadDlg.h"
 
 // CLoaderDlg ¶Ô»°¿ò
 class CLoaderDlg : public CDialogEx
@@ -40,7 +40,8 @@ protected:
 public:
 	CStatusBar	m_StatusBar;
 	CMscomm1 m_MSComm;
-
+	LONG uartLen;
+	BYTE rxdata[1024];
 	CFlashDownloadDlg m_flashDownloadDlg;
 	CFlashUploadDlg m_flashUploadDlg;
 	CRFloadDlg m_rfloadDlg;
@@ -52,6 +53,12 @@ public:
 	afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD dwData);
 	void SetDateTime();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	void SendSncy(void)
+	{
+		m_MSComm.put_Output(COleVariant(_T("cnys")));
+
+	}
+	
 	void TraversalCom(void);
 	CComboBox m_ComboBoxCom;
 	CComboBox m_ComboBoxBaud;
@@ -63,4 +70,6 @@ public:
 	afx_msg void OnCbnSelchangeComboFlashsize();
 	DECLARE_EVENTSINK_MAP()
 	void OnCommMscomm1();
+protected:
+	afx_msg LRESULT OnMainMsg(WPARAM wParam, LPARAM lParam);
 };
