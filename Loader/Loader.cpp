@@ -18,6 +18,7 @@ BEGIN_MESSAGE_MAP(CLoaderApp, CWinApp)
 END_MESSAGE_MAP()
 
 
+
 // CLoaderApp ππ‘Ï
 
 CLoaderApp::CLoaderApp()

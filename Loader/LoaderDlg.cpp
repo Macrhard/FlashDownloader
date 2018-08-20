@@ -21,6 +21,8 @@ using namespace std;
 //状态栏数组
 
 CLoaderDlg *g_pMainDlg = NULL;
+CFlashDownloadDlg *g_pDownloadDlg = NULL;
+
 static UINT indicators[] =
 {
 	ID_INDICATOR_COM,
@@ -105,6 +107,7 @@ BEGIN_MESSAGE_MAP(CLoaderDlg, CDialogEx)
 	
 	//自定义消息
 	ON_MESSAGE(WM_MAIN_MSG, &CLoaderDlg::OnMainMsg)
+	ON_BN_CLICKED(IDC_BUTTON_CLOSE_COM, &CLoaderDlg::OnBnClickedButtonCloseCom)
 END_MESSAGE_MAP()
 
 
@@ -196,6 +199,9 @@ BOOL CLoaderDlg::OnInitDialog()
 	TraversalCom();
 	//波特率默认显示索引为5的项 57600
 	m_ComboBoxBaud.SetCurSel(5);
+
+	UartState = UART_IDLE;
+	UartResp = OK;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -248,7 +254,15 @@ HCURSOR CLoaderDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
+//void CLoaderDlg::msdelay(int ms)
+//{
+//	DWORD timeBegin = timeGetTime();
+//	DWORD timeEnd = 0;
+//	do {
+//		timeEnd = timeGetTime();
+//
+//	} while (timeEnd - timeBegin <= ms);
+//}
 
 void CLoaderDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -494,7 +508,81 @@ void CLoaderDlg::OnCommMscomm1()
 		}
 
 		//确定当前驻留在接收缓冲区等待被取出字符数量，
-		//设置为0，接收缓冲区的内容将被清除；
+		//设置为0 接收缓冲区的内容将被清除；
 		m_MSComm.put_InBufferCount(0);
+		k = 0x5AA56996;
+		BYTE log = 0;
+		BYTE logLen = 0;
+		//判断上下载模式
+		if (LoadType == Download)
+		{
+			while (log < uartLen)
+			{
+				//打印log信息
+				if ((rxdata[log] == 'L'))
+				{
+					logLen = rxdata[log + 1];
+					rxdata[log + logLen] = '\0';
+					rxdata[log + 0] = '-';
+					rxdata[log + 1] = ' ';
+					//将log打印
+					g_pDownloadDlg->m_ListboxLog.AddString((CString)(rxdata + log));
+					//每个log之间用 \n 隔开 所以加2
+					log += logLen + 2;
+				}
+				else
+				{
+					k = rxdata[log];
+					log += 1;
+				}
+			}
+			if (k != 0x5AA56996)
+			{
+				if ((k == 0xFF) || (k < 0x05))
+				{
+					switch (UartState)
+					{
+					case UART_IDLE:
+						break;
+					case UART_SYNC:
+					case UART_ADDR:
+					case UART_CODE:
+						UartResp = (enum _UartResponse)k;
+						DownloadEvent.SetEvent();
+						return;
+					default:
+						break;
+					}
+				}
+			}
+		}
+		//判断是上载的起始阶段还是 接收阶段
+		if (LoadType == Upload)
+		{
+			if (rxdata[0] == 2)
+			{
+				LoadType = SYNC;
+				UploadEvent.SetEvent();
+				return;
+			}
+		}
+		else
+		{
+			//loadType = StartUpload;  //1
+			UploadEvent.SetEvent();
+		}
+	}
+	
+}
+
+void CLoaderDlg::OnBnClickedButtonCloseCom()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (m_MSComm.get_PortOpen()) //如果串口是打开的返回 1 ，关闭返回 0    则关闭串口 
+	{
+		m_MSComm.put_PortOpen(FALSE);
+		oldComNum = 0;
+		m_StatusBar.SetPaneText(0, _T("COM??"));
+		m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
 	}
 }

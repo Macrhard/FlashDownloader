@@ -6,45 +6,18 @@
 #include "FlashDownloadDlg.h"
 #include "afxdialogex.h"
 
-
+//CLoaderDlg *g_pMainDlg = NULL;
 #define  PAGE_LEN  (1*1024)
 #define  MAX_FILE  (8) //可下载的最大文件数
 CString Path[8] = { NULL };
 CString Addr[8] = { NULL };
 
-enum _UartResponse
-{
-	OK = 0x00,
-	UBOOT = 0x01,	 /* uboot       */
-	ANDES = 0x02,  /* adnes */
-	XIP = 0x03,    /* xip     */
-	ANDES1 = 0x04, /* andes1   */
-	XIP1 = 0x05,	/*xip1*/
-	NV = 0x06,
-	FAIL = 0xFF
-}UartResp, fileType;
-enum _UartStatus
-{
-	UART_IDLE = 0,
-	UART_SYNC = 1,
-	UART_ADDR = 2,
-	UART_CODE = 3
-}UartState;
-enum _LoadType
-{
-	Download = 0,
-	Upload = 1,
-	SYNC = 3,
-	StartUpload = 4
-}LoadType;
 
 struct _fileInfo
 {
 	int fileType; //fileType 来指定下载打文件类型如 uboot，andes xip 等
 	DWORD fileAddr;
 }fileInfo[MAX_FILE];
-
-
 
 // CFlashDownloadDlg 对话框
 
@@ -71,9 +44,7 @@ void CFlashDownloadDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK6, m_check6);
 	DDX_Control(pDX, IDC_CHECK7, m_check7);
 	DDX_Control(pDX, IDC_CHECK8, m_check8);
-	//  DDX_Control(pDX, IDC_EDIT_PATH1, m_path);
 	DDX_Control(pDX, IDC_EDIT_PATH2, m_path2);
-	//  DDX_Control(pDX, IDC_EDIT_PATH1, path1);
 	DDX_Control(pDX, IDC_EDIT_PATH1, m_path1);
 	DDX_Control(pDX, IDC_EDIT_PATH3, m_path3);
 	DDX_Control(pDX, IDC_EDIT_PATH4, m_path4);
@@ -277,7 +248,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		if (option.Find(_T("uboot")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = UBOOT;
+			fileInfo[index].fileType = g_pMainDlg->UBOOT;
 			Addr[index] = GetConfigInfo(_T("address"), _T("uboot"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -285,7 +256,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("andes")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = ANDES;
+			fileInfo[index].fileType = g_pMainDlg->ANDES;
 			Addr[index] = GetConfigInfo(_T("address"), _T("andes"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -293,7 +264,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("xip")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = XIP;
+			fileInfo[index].fileType = g_pMainDlg->XIP;
 			Addr[index] = GetConfigInfo(_T("address"), _T("xip"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -301,7 +272,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("andes1")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = ANDES1;
+			fileInfo[index].fileType = g_pMainDlg->ANDES1;
 			Addr[index] = GetConfigInfo(_T("address"), _T("andes1"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -309,7 +280,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("xip1")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = XIP1;
+			fileInfo[index].fileType = g_pMainDlg->XIP1;
 			Addr[index] = GetConfigInfo(_T("address"), _T("xip1"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -317,7 +288,7 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 		else if (option.Find(_T("nv")) != -1)
 		{
 			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = NV;
+			fileInfo[index].fileType = g_pMainDlg->NV;
 			Addr[index] = GetConfigInfo(_T("address"), _T("nv"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
@@ -429,6 +400,8 @@ void CFlashDownloadDlg::GetFilePath(void)
 {
 	if (m_check1.GetCheck() == 1)
 	{
+
+
 		m_path1.GetWindowText(Path[0]);
 	}
 	else
@@ -507,17 +480,17 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 	
 	if (filePath.Find(_T("uboot")) != -1)
 	{
-		return UBOOT;
+		return g_pMainDlg->UBOOT;
 	}
 	else if (filePath.Find(_T("andes")) != -1)
 	{
 		if (filePath.Find(_T("andes1")) != -1)
 		{
-			return ANDES1;
+			return g_pMainDlg->ANDES1;
 		}
 		else
 		{
-			return ANDES;
+			return g_pMainDlg->ANDES;
 
 		}
 	}
@@ -525,17 +498,17 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 	{
 		if (filePath.Find(_T("xip1")) != -1)
 		{
-			return ANDES1;
+			return g_pMainDlg->ANDES1;
 		}
 		else
 		{
-			return XIP;
+			return g_pMainDlg->XIP;
 
 		}
 	}
 	else if(filePath.Find(_T("nv")) != -1)
 	{
-		return NV;
+		return g_pMainDlg->NV;
 	}
 	return 0;
 }
@@ -558,7 +531,7 @@ void CFlashDownloadDlg::ThrowTips(int tipsIndex)
 void CFlashDownloadDlg::OnBnClickedButtonDownload()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	LoadType = Download;
+	g_pMainDlg->LoadType = g_pMainDlg->Download;
 	GetFilePath();
 	int fileCount = 0;
 	for (int cnt = 0; cnt < 8; cnt++)
@@ -578,25 +551,432 @@ void CFlashDownloadDlg::OnBnClickedButtonDownload()
 		MessageBox(_T("Please selcet a appropriate serial port"), _T("Tips"), MB_OK | MB_ICONWARNING);
 		return;
 	}
-
-	m_ListboxLog.ResetContent();//清空Log框中的内容
-	m_ListboxLog.AddString(_T("+ Start the download"));
-	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
-	m_Progress.SetPos(0);
+	DisableWindow();
 	pUartThread = AfxBeginThread(UartDownload, this, THREAD_PRIORITY_NORMAL, 0, 0);
 }
 //CLoaderDlg *pMainDlg = (CLoaderDlg*)GetParent()->GetParent();
+
+//这个又长又臭的函数 迟早要重写
 UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 {
+
+
 	
-	
-	g_pMainDlg->SendSncy();
 	CFlashDownloadDlg *ptr = (CFlashDownloadDlg*)pParam;
 
+	ptr->m_ListboxLog.ResetContent();//清空Log框中的内容
+	ptr->m_ListboxLog.AddString(_T("+ Start downloading"));
+	ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+
+	CByteArray byteArray;
+	int loop = 0;
+	do {
+			int j = 0;
+			if (g_pMainDlg->UartState == g_pMainDlg->UART_IDLE)
+			{
+				g_pMainDlg->UartState = g_pMainDlg->UART_SYNC;
+				int n = 0;
+				while (++n)
+				{
+					g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));
+					if (WaitForSingleObject(g_pMainDlg->DownloadEvent, 5000) == WAIT_OBJECT_0)
+					{
+						break;
+					}
+					else
+					{
+						if (n > 3)
+						{
+							ptr->m_ListboxLog.AddString(_T("+ Stop upload, serial port timeout"));
+							ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+							AfxMessageBox(_T("Sorry, serial port timeout"));
+							goto error_return;
+						}
+						ptr->m_ListboxLog.AddString(_T("+ Handshaking......"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+				}
+				switch (g_pMainDlg->UartResp)  //等待MCU回复 判断要下载文件类型
+				{
+				case (1):
+					loop = 1;
+					ptr->m_ListboxLog.AddString(_T("+ Handshake successfull"));
+					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					ptr->m_ListboxLog.AddString(_T("+ MCU in bootrom mode, uboot code will be downloaded"));
+					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					break;
+				case 2:
+					loop = 0;
+					ptr->m_ListboxLog.AddString(_T("+ Handshake successfull"));
+					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					ptr->m_ListboxLog.AddString(_T("+ MCU in uboot mode, code will be downloaded"));
+					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					break;
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 0:
+				case 0xff:
+				default:
+					ptr->m_ListboxLog.AddString(_T("+ Stop download, handshake failed"));
+					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					AfxMessageBox(_T("Sorry, handshake failed"));
+					goto error_return;
+				}
+			}
+
+
+			if (loop == 1)
+			{
+				j = ptr->FindFile(_T("uboot"));
+				goto bootromdown;
+			}
+			for (; j < 8; j++)
+			{
+
+				if (Path[j] == "")
+				{
+					continue;
+				}
+			bootromdown:
+				BYTE *fileBuf = NULL;
+				DWORD fileLen;
+				if (g_pMainDlg->UartState == g_pMainDlg->UART_SYNC)
+				{
+					g_pMainDlg->UartState = g_pMainDlg->UART_ADDR;
+
+					CString filePath;
+					filePath = Path[j];
+					CFile binfile(filePath, 
+					CFile::modeRead | CFile::shareDenyWrite); //以只读模式打开 加读写锁
+					fileLen = binfile.GetLength(); //得到文件字节数 逻辑长度以字节表示 
+					fileBuf = new BYTE[fileLen];
+					ptr->SendFileInfo(fileLen, j);
+					binfile.Read(fileBuf, fileLen);
+					binfile.Close(); //关闭文件流
+					if (fileBuf == NULL)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ Stop download, apply for memory failed"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+						AfxMessageBox(_T("Apply for memory failed"));
+						binfile.Close();
+						goto error_return;
+					}
+					if (WaitForSingleObject(g_pMainDlg->DownloadEvent, INFINITE) != WAIT_OBJECT_0)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ Stop download serial port error"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+						AfxMessageBox(_T("serial port time out"));
+						delete[] fileBuf;
+						fileBuf = NULL;
+						goto error_return;
+					}
+
+					if (g_pMainDlg->UartResp != g_pMainDlg->OK)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ 终止下载, 应答错误"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+						AfxMessageBox(_T("Response error"));
+						delete[] fileBuf;
+						fileBuf = NULL;
+						goto error_return;
+					}
+				}
+				if (g_pMainDlg->UartState == g_pMainDlg->UART_ADDR)
+				{
+					g_pMainDlg->UartState = g_pMainDlg->UART_CODE;
+					ptr->m_Progress.SetPos(0);
+					ptr->m_Progress.SetRange32(0, fileLen);
+					if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->UBOOT)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ uboot code is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+						
+					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->ANDES)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ andes code is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+						
+					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->XIP)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ xip code is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->ANDES1)
+					{
+						ptr->m_ListboxLog.AddString(_T("+ andes1 code is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->XIP1)
+					{ 
+						ptr->m_ListboxLog.AddString(_T("+ nv xip1 is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+					else
+					{
+						ptr->m_ListboxLog.AddString(_T("+ 正在下载未知代码中......"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
+						
+					ptr->m_Progress.SetPos(0);
+					ptr->SendFile(fileBuf, fileLen);
+
+				}
+				if (loop == 1)
+				{
+					g_pMainDlg->UartState = g_pMainDlg->UART_IDLE;
+					j = 0;
+					break;
+				}
+				else
+				{
+					g_pMainDlg->UartState = g_pMainDlg->UART_SYNC;
+				}
+			}
+	} while (loop > 0);
+
+{
+	//全部下载完毕发送12字节0
+	byteArray.RemoveAll();
+	byteArray.SetSize(12);
+	for (int ii = 0; ii < 12; ii++)
+	{
+		byteArray.SetAt(ii, 0);
+	}
+	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
+	while (g_pMainDlg->m_MSComm.get_OutBufferCount());
+	ptr->m_ListboxLog.AddString(_T("+ The download is complete"));
+	ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+}
+
+	error_return:
+	ptr->EnableWindow();
+	g_pMainDlg->UartState = g_pMainDlg->UART_IDLE;
+	g_pMainDlg->UartResp = g_pMainDlg->OK;
+	
 	return 0;
 }
 
 afx_msg LRESULT CFlashDownloadDlg::OnDownloadMsg(WPARAM wParam, LPARAM lParam)
 {
 	return 0;
+}
+
+void CFlashDownloadDlg::SendFileInfo(DWORD fileLen, int j)
+{
+
+	CByteArray byteArray;
+
+	//得到要传送的12个字节的文件信息
+	//前4字节表示数据模式
+	//中间4字节表示地址
+	//最后4字节表示文件字节长度
+	//binfile.Read(fileBuf, fileLen);//向提供缓冲器 存入从文件中读取的数据 即将文件数据存到内存中 fileLen可以读取的最大字符数
+	byteArray.RemoveAll(); //从该数组中删除所有指针 释放所有用于指针存储所占用的内存
+	byteArray.SetSize(12); //设置数组元素的个数
+	byteArray.SetAt(0, (BYTE)(fileInfo[j].fileType));  // 给数组中指定下标的元素赋值，但不能动态增长数组
+	byteArray.SetAt(1, (BYTE)0);
+	byteArray.SetAt(2, (BYTE)0);
+	byteArray.SetAt(3, (BYTE)0);
+	byteArray.SetAt(4, (BYTE)(fileInfo[j].fileAddr));
+	byteArray.SetAt(5, (BYTE)(fileInfo[j].fileAddr >> 8));
+	byteArray.SetAt(6, (BYTE)(fileInfo[j].fileAddr >> 16));
+	byteArray.SetAt(7, (BYTE)(fileInfo[j].fileAddr >> 24));
+	byteArray.SetAt(8, (BYTE)(fileLen));
+	byteArray.SetAt(9, (BYTE)(fileLen >> 8));
+	byteArray.SetAt(10, (BYTE)(fileLen >> 16));
+	byteArray.SetAt(11, (BYTE)(fileLen >> 24));
+	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
+	m_ListboxLog.AddString(_T("+ File information has been sent to the MCU"));
+	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+}
+
+void CFlashDownloadDlg::SendFile(BYTE *fileBuf, DWORD fileLen)
+{
+	CByteArray byteArray;
+	DWORD len = 0;
+	while (len < fileLen)
+	{
+		int block = (fileLen - len) < PAGE_LEN ? (fileLen - len) : PAGE_LEN;
+
+		byteArray.RemoveAll();
+		byteArray.SetSize(block);
+		for (int i = 0; i < block; i++, len++)
+		{
+			byteArray.SetAt(i, fileBuf[len]);
+		}
+		g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
+		if (WaitForSingleObject(g_pMainDlg->DownloadEvent, INFINITE) != WAIT_OBJECT_0) //INFINITE
+		{
+			m_ListboxLog.AddString(_T("+ 终止下载, 串口错误"));
+			m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+			AfxMessageBox(_T("Serial port time out"));
+			delete[] fileBuf;
+			fileBuf = NULL;
+			return;
+		}
+		m_Progress.SetStep(block);
+		m_Progress.StepIt();
+		if (g_pMainDlg->UartResp != g_pMainDlg->OK)
+		{
+			m_ListboxLog.AddString(_T("+ 终止下载, 应答错误"));
+			m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+			AfxMessageBox(_T("Response error"));
+			delete[] fileBuf;
+			fileBuf = NULL;
+			return;
+		}
+	}
+	delete[] fileBuf;
+	fileBuf = NULL;
+}
+
+int CFlashDownloadDlg::FindFile(CString fileName)
+{
+	if (Path[0].Find(fileName) != -1)
+	{
+		return 0;
+	}
+	if (Path[1].Find(fileName) != -1)
+	{
+		return 1;
+	}
+	if (Path[2].Find(fileName) != -1)
+	{
+		return 2;
+	}
+	if (Path[3].Find(fileName) != -1)
+	{
+		return 3;
+	}
+	if (Path[4].Find(fileName) != -1)
+	{
+		return 4;
+	}
+	if (Path[5].Find(fileName) != -1)
+	{
+		return 5;
+	}
+	if (Path[6].Find(fileName) != -1)
+	{
+		return 6;
+	}
+	if (Path[7].Find(fileName) != -1)
+	{
+		return 7;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+void CFlashDownloadDlg::DisableWindow(void)
+{
+	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(FALSE); //关闭下载按钮，使之不可按下
+	g_pMainDlg->GetDlgItem(IDC_COMBO_COM)->EnableWindow(FALSE);  //关闭COM口列表框，使之不可更改选项
+	GetDlgItem(IDC_EDIT_PATH1)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH2)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH5)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH6)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH7)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_PATH8)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR1)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR2)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR5)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR6)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR7)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_ADDR8)->EnableWindow(FALSE);
+	g_pMainDlg->GetDlgItem(IDC_COMBO_FLASHSIZE)->EnableWindow(FALSE);
+	g_pMainDlg->GetDlgItem(IDC_COMBO_BAUD)->EnableWindow(FALSE);
+	g_pMainDlg->GetDlgItem(IDC_BUTTON_CLOSE_COM)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_COMBINE)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK1)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK2)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK5)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK6)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK7)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK8)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLNALL)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_COMBINE)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPNE1)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN2)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN5)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN6)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN7)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_OPEN8)->EnableWindow(FALSE);
+
+	GetDlgItem(IDC_BUTTON_CLN1)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN2)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN5)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN6)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(FALSE);
+
+}
+
+void CFlashDownloadDlg::EnableWindow(void)
+{
+	GetDlgItem(IDC_BUTTON_DOWNLOAD)->EnableWindow(TRUE); //关闭下载按钮，使之不可按下
+	g_pMainDlg->GetDlgItem(IDC_COMBO_COM)->EnableWindow(TRUE);  //关闭COM口列表框，使之不可更改选项
+	GetDlgItem(IDC_EDIT_PATH1)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH2)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH4)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH5)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH6)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH7)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_PATH8)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR1)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR2)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR4)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR5)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR6)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR7)->EnableWindow(TRUE);
+	GetDlgItem(IDC_EDIT_ADDR8)->EnableWindow(TRUE);
+	g_pMainDlg->GetDlgItem(IDC_COMBO_FLASHSIZE)->EnableWindow(TRUE);
+	g_pMainDlg->GetDlgItem(IDC_COMBO_BAUD)->EnableWindow(TRUE);
+	g_pMainDlg->GetDlgItem(IDC_BUTTON_CLOSE_COM)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_COMBINE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK1)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK2)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK4)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK5)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK6)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK7)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CHECK8)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLNALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_COMBINE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPNE1)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN2)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN4)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN5)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN6)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN7)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_OPEN8)->EnableWindow(TRUE);
+
+	GetDlgItem(IDC_BUTTON_CLN1)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN2)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN4)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN5)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN6)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(TRUE);
 }

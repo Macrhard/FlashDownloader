@@ -7,6 +7,7 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 #include "Dbt.h"
+#define PAGE_LEN (1*1024)
 //#include "FlashDownloadDlg.h"
 //#include "FlashUploadDlg.h"
 //#include "RFloadDlg.h"
@@ -38,14 +39,45 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+
+	LONG uartLen;
+	BYTE rxdata[PAGE_LEN];
+
+	/*BOOL mscomState = 0;*/
+	int pathCount = 0;
+	enum _UartResponse
+	{
+		OK = 0x00,
+		UBOOT = 0x01,	  /* uboot  */
+		ANDES = 0x02,    /* adnes  */
+		XIP = 0x03,     /* xip    */
+		ANDES1 = 0x04, /* andes  */
+		XIP1 = 0x05,  /*xip1    */
+		NV = 0x06,
+		FAIL = 0xFF
+	}UartResp, fileType;
+	enum _UartStatus
+	{
+		UART_IDLE = 0,
+		UART_SYNC = 1,
+		UART_ADDR = 2,
+		UART_CODE = 3
+	}UartState;
+	enum _LoadType
+	{
+		Download = 0,
+		Upload = 1,
+		SYNC = 3,
+		StartUpload = 4
+	}LoadType;
+
+	CEvent DownloadEvent;
+	CEvent UploadEvent;
 	CStatusBar	m_StatusBar;
 	CMscomm1 m_MSComm;
-	LONG uartLen;
-	BYTE rxdata[1024];
 	CFlashDownloadDlg m_flashDownloadDlg;
 	CFlashUploadDlg m_flashUploadDlg;
 	CRFloadDlg m_rfloadDlg;
-
 	CTabCtrl m_tab;
 	CDialog* pDialog[3];
 	int m_CurTabSel;
@@ -53,12 +85,6 @@ public:
 	afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD dwData);
 	void SetDateTime();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	void SendSncy(void)
-	{
-		m_MSComm.put_Output(COleVariant(_T("cnys")));
-
-	}
-	
 	void TraversalCom(void);
 	CComboBox m_ComboBoxCom;
 	CComboBox m_ComboBoxBaud;
@@ -72,4 +98,6 @@ public:
 	void OnCommMscomm1();
 protected:
 	afx_msg LRESULT OnMainMsg(WPARAM wParam, LPARAM lParam);
+public:
+	afx_msg void OnBnClickedButtonCloseCom();
 };

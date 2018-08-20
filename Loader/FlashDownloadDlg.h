@@ -77,4 +77,9 @@ public:
 	CWinThread* pUartThread;
 protected:
 	afx_msg LRESULT OnDownloadMsg(WPARAM wParam, LPARAM lParam);
+	void SendFileInfo(DWORD fileLen, int j);
+	void SendFile(BYTE * fileBuf, DWORD fileLen);
+	int FindFile(CString fileName);
+	void DisableWindow(void);
+	void EnableWindow(void);
 };
