@@ -6,11 +6,52 @@
 #include "FlashDownloadDlg.h"
 #include "afxdialogex.h"
 
+
+CFlashDownloadDlg *g_pDownloadDlg = NULL;
 //CLoaderDlg *g_pMainDlg = NULL;
 #define  PAGE_LEN  (1*1024)
 #define  MAX_FILE  (8) //可下载的最大文件数
 CString Path[8] = { NULL };
 CString Addr[8] = { NULL };
+
+
+/*
+generate nv file 
+*/
+
+
+#define  NV_KB          (1024)
+#define  NV_MB          (NV_KB*NV_KB)
+#define  NV_FLASH_SIZE  (1*NV_MB)                     /* flash total size = 1MB */
+#define  NV_FLASH_PAGE  (4*NV_KB)                     /* flash erase size = 4KB */
+#define  NV_FLASH_ADDR  (NV_FLASH_SIZE-NV_FLASH_PAGE) /* store in last page address */
+
+typedef struct _conf_file
+{
+	unsigned short index;        /* 0,1..MAX_AP_NUM-1 */
+	unsigned char  ssid[33];     /* 32+'\0' */
+	unsigned char  pswd[33]; /* 32+'\0' */
+}config_file;
+
+#define  NV_NUM_MAX_AP     (5)
+#define  NV_LEN_CONF_FILE  (sizeof(config_file))
+#define  NV_LEN_MAC_ADDR   (18)
+#define  NV_LEN_IP_ADDR    (16)
+#define  NV_LEN_MASK_ADDR  (16)
+#define  NV_LEN_GW_ADDR    (16)
+
+typedef struct _nv_param
+{
+	unsigned char mac[NV_LEN_MAC_ADDR];  /* 12-34-56-78-9A-BC */
+	unsigned char ip[NV_LEN_IP_ADDR];    /* 192.168.0.123     */
+	unsigned char msk[NV_LEN_MASK_ADDR]; /* 255.255.255.0     */
+	unsigned char gw[NV_LEN_GW_ADDR];    /* 192.168.0.1       */
+	config_file conf_file[NV_NUM_MAX_AP];
+}nv_param;
+
+nv_param param;
+
+
 
 
 struct _fileInfo
@@ -79,6 +120,9 @@ BEGIN_MESSAGE_MAP(CFlashDownloadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_DOWNLOAD, &CFlashDownloadDlg::OnBnClickedButtonDownload)
 	//自定义消息
 	ON_MESSAGE(WM_DOWNLOAD_MSG, &CFlashDownloadDlg::OnDownloadMsg)
+	ON_BN_CLICKED(IDC_BUTTON_START, &CFlashDownloadDlg::OnBnClickedButtonStart)
+	ON_BN_CLICKED(IDC_BUTTON_STOP, &CFlashDownloadDlg::OnBnClickedButtonStop)
+	ON_BN_CLICKED(IDC_BUTTON_GENERATE_NV, &CFlashDownloadDlg::OnBnClickedButtonGenerateNv)
 END_MESSAGE_MAP()
 
 
@@ -531,6 +575,7 @@ void CFlashDownloadDlg::ThrowTips(int tipsIndex)
 void CFlashDownloadDlg::OnBnClickedButtonDownload()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	g_pMainDlg->DownloadEvent.ResetEvent();
 	g_pMainDlg->LoadType = g_pMainDlg->Download;
 	GetFilePath();
 	int fileCount = 0;
@@ -979,4 +1024,133 @@ void CFlashDownloadDlg::EnableWindow(void)
 	GetDlgItem(IDC_BUTTON_CLN6)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(TRUE);
+}
+
+void CFlashDownloadDlg::OnBnClickedButtonStart()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CFlashDownloadDlg::OnBnClickedButtonStop()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CFlashDownloadDlg::OnBnClickedButtonGenerateNv()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog fileDlg(TRUE, _T("txt"), NULL, OFN_HIDEREADONLY, _T("文本文件(*.txt)|*.txt||"), this);
+
+	if (fileDlg.DoModal() == IDOK)
+	{
+		memset(&param, 0, sizeof(param));
+
+		CString filePath;
+		CFile   fileHandle;
+		int     fileLen;
+		filePath = fileDlg.GetPathName();
+		fileHandle.Open(filePath, CFile::modeRead | CFile::shareDenyWrite);
+		fileLen = fileHandle.GetLength();
+
+		BYTE *fileBuf = new BYTE[fileLen];
+		if (fileBuf)
+		{
+			fileHandle.Read(fileBuf, fileLen);
+			int i, start, end;
+
+			// mac
+			for (i = 0; i<fileLen - 2; i++)
+				if (fileBuf[i] == 'm' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 'c')
+					break;
+			while (fileBuf[++i] != '=');
+			while (fileBuf[++i] == ' ');
+			start = i;
+			while (fileBuf[++i] != '\r');
+			end = i;
+			memcpy(param.mac, fileBuf + start, end - start);
+
+			// ip
+			for (i = 0; i<fileLen - 1; i++)
+				if (fileBuf[i] == 'i' && fileBuf[i + 1] == 'p')
+					break;
+			while (fileBuf[++i] != '=');
+			while (fileBuf[++i] == ' ');
+			start = i;
+			while (fileBuf[++i] != '\r');
+			end = i;
+			memcpy(param.ip, fileBuf + start, end - start);
+
+			// mask
+			for (i = 0; i<fileLen - 3; i++)
+				if (fileBuf[i] == 'm' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 's' && fileBuf[i + 3] == 'k')
+					break;
+			while (fileBuf[++i] != '=');
+			while (fileBuf[++i] == ' ');
+			start = i;
+			while (fileBuf[++i] != '\r');
+			end = i;
+			memcpy(param.msk, fileBuf + start, end - start);
+
+			// gateway
+			for (i = 0; i<fileLen - 3; i++)
+				if (fileBuf[i] == 'g' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 't' && fileBuf[i + 3] == 'e')
+					break;
+			while (fileBuf[++i] != '=');
+			while (fileBuf[++i] == ' ');
+			start = i;
+			while (fileBuf[++i] != '\r');
+			end = i;
+			memcpy(param.gw, fileBuf + start, end - start);
+
+			for (int id = 0; id<NV_NUM_MAX_AP; id++)
+			{
+				param.conf_file[id].index = id;
+
+				// ssid
+				for (i = 0; i<fileLen - 4; i++)
+					if (fileBuf[i] == 's' && fileBuf[i + 1] == 's' && fileBuf[i + 2] == 'i' && fileBuf[i + 3] == 'd' && fileBuf[i + 4] == (id + '1'))
+						break;
+
+				while (fileBuf[i++] != '=');
+
+				if (fileBuf[i] == ' ')
+					while (fileBuf[++i] == ' ');
+				start = i;
+
+				if (fileBuf[i] != '\r')
+					while (fileBuf[++i] != '\r');
+				end = i;
+
+				memcpy(param.conf_file[id].ssid, fileBuf + start, end - start);
+
+				// password
+				for (i = 0; i<fileLen - 4; i++)
+					if (fileBuf[i] == 'w' && fileBuf[i + 1] == 'o' && fileBuf[i + 2] == 'r' && fileBuf[i + 3] == 'd' && fileBuf[i + 4] == (id + '1'))
+						break;
+
+				while (fileBuf[i++] != '=');
+
+				if (fileBuf[i] == ' ')
+					while (fileBuf[++i] == ' ');
+				start = i;
+
+				if (fileBuf[i] != '\r')
+					while (fileBuf[++i] != '\r');
+				end = i;
+
+				memcpy(param.conf_file[id].pswd, fileBuf + start, end - start);
+			}
+			delete[] fileBuf;
+		}
+
+		filePath.Replace(_T("txt"), _T("bin"));
+		fileHandle.Close();
+		fileHandle.Open(filePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite);
+		fileHandle.Write(&param, sizeof(param));
+		fileHandle.Close();
+
+		MessageBox(filePath, _T("恭喜发财, 大吉大利"), MB_OK | MB_ICONINFORMATION);
+	}
 }

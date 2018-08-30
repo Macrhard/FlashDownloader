@@ -1,4 +1,5 @@
 #pragma once
+#include "afxwin.h"
 
 
 // CFlashUploadDlg 对话框
@@ -20,4 +21,9 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedButtonUpload();
+	CEdit m_Addr;
+	CEdit m_Length;
+	CEdit m_SavePath;
 };

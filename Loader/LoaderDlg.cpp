@@ -21,7 +21,7 @@ using namespace std;
 //状态栏数组
 
 CLoaderDlg *g_pMainDlg = NULL;
-CFlashDownloadDlg *g_pDownloadDlg = NULL;
+
 
 static UINT indicators[] =
 {
@@ -117,6 +117,8 @@ BOOL CLoaderDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+
+
 	// 将“关于...”菜单项添加到系统菜单中。
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
@@ -204,6 +206,8 @@ BOOL CLoaderDlg::OnInitDialog()
 	UartResp = OK;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
+
+//CFlashDownloadDlg *g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
 
 void CLoaderDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -492,27 +496,26 @@ BEGIN_EVENTSINK_MAP(CLoaderDlg, CDialogEx)
 END_EVENTSINK_MAP()
 void CLoaderDlg::OnCommMscomm1()
 {
+	g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
 	// TODO: 在此处添加消息处理程序代码
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
 	LONG  k;
 
-	if (m_MSComm.get_CommEvent() == 2) //事件值为2表示接收缓冲区内有字符  
+	if (m_MSComm.get_CommEvent() == 2) 
 	{
-		variant_inp = m_MSComm.get_Input(); // 读缓冲区字符到variant_inp
-		safearray_inp = variant_inp; //VARIANT类型变量转换为ColeSafeArray型变量
-		uartLen = safearray_inp.GetOneDimSize();//得到有效数据长度
+		variant_inp = m_MSComm.get_Input(); 
+		safearray_inp = variant_inp; 
+		uartLen = safearray_inp.GetOneDimSize();
 		for (k = 0; k < uartLen; k++)
 		{
-			safearray_inp.GetElement(&k, rxdata + k); //转换为BYTE型数组
+			safearray_inp.GetElement(&k, rxdata + k); 
 		}
-
-		//确定当前驻留在接收缓冲区等待被取出字符数量，
-		//设置为0 接收缓冲区的内容将被清除；
 		m_MSComm.put_InBufferCount(0);
 		k = 0x5AA56996;
 		BYTE log = 0;
 		BYTE logLen = 0;
+
 		//判断上下载模式
 		if (LoadType == Download)
 		{
@@ -525,9 +528,8 @@ void CLoaderDlg::OnCommMscomm1()
 					rxdata[log + logLen] = '\0';
 					rxdata[log + 0] = '-';
 					rxdata[log + 1] = ' ';
-					//将log打印
+					
 					g_pDownloadDlg->m_ListboxLog.AddString((CString)(rxdata + log));
-					//每个log之间用 \n 隔开 所以加2
 					log += logLen + 2;
 				}
 				else

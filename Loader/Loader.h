@@ -17,6 +17,7 @@
 
 #define WM_MAIN_MSG WM_USER+0x1001
 #define WM_DOWNLOAD_MSG WM_USER+0x2001
+
 extern CLoaderDlg *g_pMainDlg;
 extern CFlashDownloadDlg *g_pDownloadDlg;
 // CLoaderApp: 

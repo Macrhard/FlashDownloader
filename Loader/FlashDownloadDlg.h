@@ -9,7 +9,6 @@
 //#include "LoaderDlg.h"
 
 // CFlashDownloadDlg ¶Ô»°¿ò
-
 class CFlashDownloadDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(CFlashDownloadDlg)
@@ -82,4 +81,8 @@ protected:
 	int FindFile(CString fileName);
 	void DisableWindow(void);
 	void EnableWindow(void);
+public:
+	afx_msg void OnBnClickedButtonStart();
+	afx_msg void OnBnClickedButtonStop();
+	afx_msg void OnBnClickedButtonGenerateNv();
 };
