@@ -149,7 +149,7 @@ BOOL CLoaderDlg::OnInitDialog()
 	{
 		m_tab.InsertItem(0, _T("FlashDownload"));	//insert the first table
 		m_tab.InsertItem(1, _T("FlashUpload"));
-		m_tab.InsertItem(2, _T("RFload"));
+		m_tab.InsertItem(2, _T("RF Test"));
 
 		m_flashDownloadDlg.Create(IDD_DIALOG_FLASHDOWNLOAD, &m_tab);//creat the first table
 		m_flashUploadDlg.Create(IDD_DIALOG_FLASHUPLOAD, &m_tab);
@@ -257,16 +257,6 @@ HCURSOR CLoaderDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
-//void CLoaderDlg::msdelay(int ms)
-//{
-//	DWORD timeBegin = timeGetTime();
-//	DWORD timeEnd = 0;
-//	do {
-//		timeEnd = timeGetTime();
-//
-//	} while (timeEnd - timeBegin <= ms);
-//}
 
 void CLoaderDlg::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {

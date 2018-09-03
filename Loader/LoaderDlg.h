@@ -48,12 +48,10 @@ public:
 	enum _UartResponse
 	{
 		OK = 0x00,
+		NV = 0x02,
 		UBOOT = 0x01,	  /* uboot  */
-		ANDES = 0x02,    /* adnes  */
-		XIP = 0x03,     /* xip    */
+		ANDES = 0x03,    /* adnes  */
 		ANDES1 = 0x04, /* andes  */
-		XIP1 = 0x05,  /*xip1    */
-		NV = 0x06,
 		FAIL = 0xFF
 	}UartResp, fileType;
 	enum _UartStatus

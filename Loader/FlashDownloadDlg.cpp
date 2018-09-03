@@ -120,8 +120,6 @@ BEGIN_MESSAGE_MAP(CFlashDownloadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_DOWNLOAD, &CFlashDownloadDlg::OnBnClickedButtonDownload)
 	//自定义消息
 	ON_MESSAGE(WM_DOWNLOAD_MSG, &CFlashDownloadDlg::OnDownloadMsg)
-	ON_BN_CLICKED(IDC_BUTTON_START, &CFlashDownloadDlg::OnBnClickedButtonStart)
-	ON_BN_CLICKED(IDC_BUTTON_STOP, &CFlashDownloadDlg::OnBnClickedButtonStop)
 	ON_BN_CLICKED(IDC_BUTTON_GENERATE_NV, &CFlashDownloadDlg::OnBnClickedButtonGenerateNv)
 END_MESSAGE_MAP()
 
@@ -305,27 +303,11 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
 		}
-		else if (option.Find(_T("xip")) != -1)
-		{
-			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = g_pMainDlg->XIP;
-			Addr[index] = GetConfigInfo(_T("address"), _T("xip"));
-			SetDlgItemText(addrID, Addr[index]);
-			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
-		}
 		else if (option.Find(_T("andes1")) != -1)
 		{
 			SetDlgItemText(pathID, path);
 			fileInfo[index].fileType = g_pMainDlg->ANDES1;
 			Addr[index] = GetConfigInfo(_T("address"), _T("andes1"));
-			SetDlgItemText(addrID, Addr[index]);
-			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
-		}
-		else if (option.Find(_T("xip1")) != -1)
-		{
-			SetDlgItemText(pathID, path);
-			fileInfo[index].fileType = g_pMainDlg->XIP1;
-			Addr[index] = GetConfigInfo(_T("address"), _T("xip1"));
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
 		}
@@ -538,18 +520,6 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 
 		}
 	}
-	else if (filePath.Find(_T("xip")) != -1)
-	{
-		if (filePath.Find(_T("xip1")) != -1)
-		{
-			return g_pMainDlg->ANDES1;
-		}
-		else
-		{
-			return g_pMainDlg->XIP;
-
-		}
-	}
 	else if(filePath.Find(_T("nv")) != -1)
 	{
 		return g_pMainDlg->NV;
@@ -604,9 +574,6 @@ void CFlashDownloadDlg::OnBnClickedButtonDownload()
 //这个又长又臭的函数 迟早要重写
 UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 {
-
-
-	
 	CFlashDownloadDlg *ptr = (CFlashDownloadDlg*)pParam;
 
 	ptr->m_ListboxLog.ResetContent();//清空Log框中的内容
@@ -686,15 +653,14 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 				}
 			bootromdown:
 				BYTE *fileBuf = NULL;
-				DWORD fileLen;
+				DWORD fileLen = 0;
 				if (g_pMainDlg->UartState == g_pMainDlg->UART_SYNC)
 				{
 					g_pMainDlg->UartState = g_pMainDlg->UART_ADDR;
 
 					CString filePath;
 					filePath = Path[j];
-					CFile binfile(filePath, 
-					CFile::modeRead | CFile::shareDenyWrite); //以只读模式打开 加读写锁
+					CFile binfile(filePath,CFile::modeRead | CFile::shareDenyWrite); //以只读模式打开 加读写锁
 					fileLen = binfile.GetLength(); //得到文件字节数 逻辑长度以字节表示 
 					fileBuf = new BYTE[fileLen];
 					ptr->SendFileInfo(fileLen, j);
@@ -745,19 +711,9 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 					}
 						
-					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->XIP)
-					{
-						ptr->m_ListboxLog.AddString(_T("+ xip code is being downloaded"));
-						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
-					}
 					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->ANDES1)
 					{
 						ptr->m_ListboxLog.AddString(_T("+ andes1 code is being downloaded"));
-						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
-					}
-					else if ((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->XIP1)
-					{ 
-						ptr->m_ListboxLog.AddString(_T("+ nv xip1 is being downloaded"));
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 					}
 					else
