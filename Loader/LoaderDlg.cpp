@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "Loader.h"
-//#include "LoaderDlg.h"
+#include "LoaderDlg.h"
 #include "afxdialogex.h"
 #include "mscomm1.h"
 
@@ -17,11 +17,8 @@ using namespace std;
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-//CFlashDownloadDlg *downloadChildDlg = new CFlashDownloadDlg();
-//状态栏数组
-
+//全局指针用来传递主对话的信息
 CLoaderDlg *g_pMainDlg = NULL;
-
 
 static UINT indicators[] =
 {
@@ -34,7 +31,6 @@ static UINT indicators[] =
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -67,15 +63,13 @@ END_MESSAGE_MAP()
 
 
 // CLoaderDlg 对话框
-
-
-
 CLoaderDlg::CLoaderDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_LOADER_DIALOG, pParent)
 {
 	
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	oldComNum = 0;
+	//将主对话框的指针赋值给g_pMianDlg
 	g_pMainDlg = this;
 	//默认波特率57600
 	comBaudRate = _T("57600");
@@ -100,7 +94,7 @@ BEGIN_MESSAGE_MAP(CLoaderDlg, CDialogEx)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &CLoaderDlg::OnTcnSelchangeTab1)
 	ON_WM_TIMER()
 
-	ON_WM_DEVICECHANGE()
+	ON_WM_DEVICECHANGE()	//采用x64的解决方案 会报错
 	ON_CBN_SELCHANGE(IDC_COMBO_BAUD, &CLoaderDlg::OnCbnSelchangeComboBaud)
 	ON_CBN_SELCHANGE(IDC_COMBO_COM, &CLoaderDlg::OnCbnSelchangeComboCom)
 	ON_CBN_SELCHANGE(IDC_COMBO_FLASHSIZE, &CLoaderDlg::OnCbnSelchangeComboFlashsize)
@@ -116,12 +110,6 @@ END_MESSAGE_MAP()
 BOOL CLoaderDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-
-
-
-	// 将“关于...”菜单项添加到系统菜单中。
-
-	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -170,6 +158,7 @@ BOOL CLoaderDlg::OnInitDialog()
 		pDialog[0] = &m_flashDownloadDlg;
 		pDialog[1] = &m_flashUploadDlg;
 		pDialog[2] = &m_rfloadDlg;
+
 		//默认显示flashload 页面
 		pDialog[0]->ShowWindow(SW_SHOW);
 		pDialog[1]->ShowWindow(SW_HIDE);
@@ -192,22 +181,21 @@ BOOL CLoaderDlg::OnInitDialog()
 		m_StatusBar.SetPaneText(0, _T("COM??"));
 		m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
 		m_StatusBar.SetPaneText(5, _T("FlashSize??"));
-		//创建定时器
+
 		SetDateTime();
 		//启动定时器
 		SetTimer(1, 1000, NULL);//1000ms
 	}
 
+	//初始化串口相关事项
 	TraversalCom();
+
 	//波特率默认显示索引为5的项 57600
 	m_ComboBoxBaud.SetCurSel(5);
-
 	UartState = UART_IDLE;
 	UartResp = OK;
-	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+	return TRUE; 
 }
-
-//CFlashDownloadDlg *g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
 
 void CLoaderDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -462,7 +450,6 @@ void CLoaderDlg::OnCbnSelchangeComboBaud()
 	// TODO: 在此添加控件通知处理程序代码
 	int index = m_ComboBoxBaud.GetCurSel();
 	m_ComboBoxBaud.GetLBText(index, comBaudRate);
-	//TRACE(comBaudRate);
 	m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
 }
 //FlashSize组合框处理函数
@@ -486,12 +473,12 @@ BEGIN_EVENTSINK_MAP(CLoaderDlg, CDialogEx)
 END_EVENTSINK_MAP()
 void CLoaderDlg::OnCommMscomm1()
 {
+	//在此每次触发串口时将FlashDownload对话框的指针赋值给g_pDownloadDlg全局指针变量
 	g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
 	// TODO: 在此处添加消息处理程序代码
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
 	LONG  k;
-
 	if (m_MSComm.get_CommEvent() == 2) 
 	{
 		variant_inp = m_MSComm.get_Input(); 
@@ -578,3 +565,5 @@ void CLoaderDlg::OnBnClickedButtonCloseCom()
 		m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
 	}
 }
+
+

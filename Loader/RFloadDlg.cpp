@@ -67,25 +67,25 @@ void CRFloadDlg::OnBnClickedButtonRxtestStart()
 	 recv_val = 0, sync_val = 0, xcr_val = 0, sat_val = 0, sig_val = 0, err_val = 0;
 	// TODO: 在此添加控件通知处理程序代码
 	m_ListboxLog.ResetContent();
-	pUartThread = AfxBeginThread(RepTestStart, this, THREAD_PRIORITY_NORMAL, 0, 0);
+	if (g_pMainDlg->oldComNum == 0)
+	{
+		MessageBox(_T("Please selcet a appropriate serial port"), _T("Tips"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+	pUartThread = AfxBeginThread(TestStartCmd, this, THREAD_PRIORITY_NORMAL, 0, 0);
 }
 
-UINT CRFloadDlg::RepTestStart(LPVOID pParam)
+UINT CRFloadDlg::TestStartCmd(LPVOID pParam)
 {
 	
 	CRFloadDlg *ptr = (CRFloadDlg*)pParam;
-	//g_pMainDlg->rxdata = {0};
-	//rf ch (1`15)
-	CString rfch;
-	int RfchIndex = ptr->m_ComboBoxRFCH.GetCurSel();
-	ptr->m_ComboBoxRFCH.GetLBText(RfchIndex, rfch);
-	ptr->m_ListboxLog.AddString(_T("+   RF Channel 是：") + rfch);
+	CString rfchCstring = ptr->GetComboBoxCstring(&ptr->m_ComboBoxRFCH);
+	rfchCstring.Delete(rfchCstring.Find(_T("-")), 5);
+	ptr->m_ListboxLog.AddString(_T("+   RF Channel 是：") + rfchCstring);
 	ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
-	rfch = _T("rf ch ") + rfch + _T("\r");
-	g_pMainDlg->m_MSComm.put_Output(COleVariant(rfch));
+	rfchCstring = _T("rf ch ") + rfchCstring + _T("\r");
+	g_pMainDlg->m_MSComm.put_Output(COleVariant(rfchCstring));
 	Sleep(50);
-	//WaitForSingleObject(g_pMainDlg->SPRecEvent, 5000);
-	//如果rxdata 未初始化 会产生bug 即 串口如果不发东西过来
 	memset(g_pMainDlg->rxdata, 0, g_pMainDlg->uartLen);
 
 	//获取 format 值

@@ -24,8 +24,8 @@ protected:
 public:
 	CWinThread* pUartThread;
 	afx_msg void OnBnClickedButtonRxtestStart();
+	static UINT TestStartCmd(LPVOID pParam);
 	afx_msg void OnBnClickedButtonRxtestStop();
-	static UINT RepTestStart(LPVOID pParam);
 	int TestRecv(BYTE rxdata[]);
 	CComboBox m_ComboBoxFormat;
 	CComboBox m_ComboBoxRFCH;

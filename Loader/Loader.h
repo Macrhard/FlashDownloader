@@ -20,9 +20,6 @@
 
 extern CLoaderDlg *g_pMainDlg;
 extern CFlashDownloadDlg *g_pDownloadDlg;
-// CLoaderApp: 
-// 有关此类的实现，请参阅 Loader.cpp
-//
 
 class CLoaderApp : public CWinApp
 {

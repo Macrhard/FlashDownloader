@@ -8,7 +8,6 @@
 
 
 CFlashDownloadDlg *g_pDownloadDlg = NULL;
-//CLoaderDlg *g_pMainDlg = NULL;
 #define  PAGE_LEN  (1*1024)
 #define  MAX_FILE  (8) //可下载的最大文件数
 CString Path[8] = { NULL };
@@ -123,11 +122,7 @@ BEGIN_MESSAGE_MAP(CFlashDownloadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_GENERATE_NV, &CFlashDownloadDlg::OnBnClickedButtonGenerateNv)
 END_MESSAGE_MAP()
 
-
-
 // CFlashDownloadDlg 消息处理程序
-
-
 
 void CFlashDownloadDlg::OnBnClickedButtonOpne1()
 {
@@ -373,7 +368,7 @@ void CFlashDownloadDlg::OnBnClickedButtonCombine()
 		}
 		head = ReadFile(Path[i], i, combineFile,head);
 	}
-	CFile combineBinfile(_T("f:\\multibinCombineFile.bin"), CFile::modeCreate|CFile::modeWrite);
+	CFile combineBinfile(_T(".\\multibinCombineFile.bin"), CFile::modeCreate|CFile::modeWrite);
 	combineBinfile.Write(combineFile,head);
 	combineBinfile.Close();
 	free(combineFile);
@@ -751,6 +746,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 	while (g_pMainDlg->m_MSComm.get_OutBufferCount());
 	ptr->m_ListboxLog.AddString(_T("+ The download is complete"));
 	ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+	g_pMainDlg->OnBnClickedButtonCloseCom();
 }
 
 	error_return:
@@ -981,18 +977,6 @@ void CFlashDownloadDlg::EnableWindow(void)
 	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(TRUE);
 }
-
-void CFlashDownloadDlg::OnBnClickedButtonStart()
-{
-	// TODO: 在此添加控件通知处理程序代码
-}
-
-
-void CFlashDownloadDlg::OnBnClickedButtonStop()
-{
-	// TODO: 在此添加控件通知处理程序代码
-}
-
 
 void CFlashDownloadDlg::OnBnClickedButtonGenerateNv()
 {
