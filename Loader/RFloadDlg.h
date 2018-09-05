@@ -48,6 +48,6 @@ public:
 	CComboBox m_NonHt;
 	CComboBox m_ElevenB;
 	void PrintLog();
-	CComboBox m_Config;
+	//CComboBox m_Config;
 	
 };

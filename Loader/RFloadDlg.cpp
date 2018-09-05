@@ -42,7 +42,7 @@ void CRFloadDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_RX_HT, m_Ht);
 	DDX_Control(pDX, IDC_COMBO_RX_NONHT, m_NonHt);
 	DDX_Control(pDX, IDC_COMBO_RX_11B, m_ElevenB);
-	DDX_Control(pDX, IDC_COMBO_CONFIG, m_Config);
+	//DDX_Control(pDX, IDC_COMBO_CONFIG, m_Config);
 }
 
 
@@ -472,8 +472,8 @@ UINT CRFloadDlg::TxTestPacketMode_TwentyM(LPVOID pParam)
 	//	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set vif 0 11b") + elevenbCstring + _T("\r")));
 	//	Sleep(50);
 	//}
-	CString configCstring = ptr->GetComboBoxCstring(&ptr->m_Config);
-	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set config 0 0 ") + configCstring + _T("\r")));
+	//CString configCstring = ptr->GetComboBoxCstring(&ptr->m_Config);
+	//g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set config 0 0 ") + configCstring + _T("\r")));
 	Sleep(50);
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("write 0x900004 0x01200072\r")));
 	Sleep(50);
@@ -533,8 +533,8 @@ UINT CRFloadDlg::TxTestPacketMode_FortyM(LPVOID pParam)
 
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set vif 0 bandwidth=40m lower\r")));
 	Sleep(50);
-	CString configCstring = ptr->GetComboBoxCstring(&ptr->m_Config);
-	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set config 0 0 ")+configCstring+_T("\r")));
+	//CString configCstring = ptr->GetComboBoxCstring(&ptr->m_Config);
+	//g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("set config 0 0 ")+configCstring+_T("\r")));
 	Sleep(50);
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("write 0x900004 0x01200072\r")));
 	Sleep(50);

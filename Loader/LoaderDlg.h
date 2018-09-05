@@ -88,6 +88,7 @@ public:
 	CComboBox m_ComboBoxBaud;
 	CComboBox m_FlashSize;
 	CString comBaudRate;
+	CString strFlashSize;
 	int oldComNum;
 	afx_msg void OnCbnSelchangeComboBaud();
 	afx_msg void OnCbnSelchangeComboCom();
@@ -98,4 +99,6 @@ protected:
 	afx_msg LRESULT OnMainMsg(WPARAM wParam, LPARAM lParam);
 public:
 	afx_msg void OnBnClickedButtonCloseCom();
+	CButton m_ifMostTopCheck;
+	afx_msg void OnBnClickedCheck1();
 };

@@ -73,7 +73,7 @@ CLoaderDlg::CLoaderDlg(CWnd* pParent /*=NULL*/)
 	g_pMainDlg = this;
 	//默认波特率57600
 	comBaudRate = _T("57600");
-	
+	strFlashSize = _T("1MB");
 }
 
 void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
@@ -84,6 +84,7 @@ void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_COM, m_ComboBoxCom);
 	DDX_Control(pDX, IDC_COMBO_BAUD, m_ComboBoxBaud);
 	DDX_Control(pDX, IDC_COMBO_FLASHSIZE, m_FlashSize);
+	DDX_Control(pDX, IDC_CHECK1, m_ifMostTopCheck);
 }
 
 //消息映射宏
@@ -102,6 +103,7 @@ BEGIN_MESSAGE_MAP(CLoaderDlg, CDialogEx)
 	//自定义消息
 	ON_MESSAGE(WM_MAIN_MSG, &CLoaderDlg::OnMainMsg)
 	ON_BN_CLICKED(IDC_BUTTON_CLOSE_COM, &CLoaderDlg::OnBnClickedButtonCloseCom)
+	ON_BN_CLICKED(IDC_CHECK1, &CLoaderDlg::OnBnClickedCheck1)
 END_MESSAGE_MAP()
 
 
@@ -132,8 +134,11 @@ BOOL CLoaderDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
+	memset(rxdata, 0, 1024);
+	uartLen = 0;
 	// TODO: 在此添加额外的初始化代码
 	//初始化三个子对话框
+
 	{
 		m_tab.InsertItem(0, _T("FlashDownload"));	//insert the first table
 		m_tab.InsertItem(1, _T("FlashUpload"));
@@ -180,7 +185,7 @@ BOOL CLoaderDlg::OnInitDialog()
 		RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 130); //放置位置
 		m_StatusBar.SetPaneText(0, _T("COM??"));
 		m_StatusBar.SetPaneText(1, comBaudRate + _T(", None, 8bit, 1stop"));
-		m_StatusBar.SetPaneText(5, _T("FlashSize??"));
+		m_StatusBar.SetPaneText(5, _T("FlashSize:") + strFlashSize);
 
 		SetDateTime();
 		//启动定时器
@@ -190,8 +195,9 @@ BOOL CLoaderDlg::OnInitDialog()
 	//初始化串口相关事项
 	TraversalCom();
 
-	//波特率默认显示索引为5的项 57600
+	//波特率默认显示索引为5的项 57600 flashsize 为1MB
 	m_ComboBoxBaud.SetCurSel(5);
+	m_FlashSize.SetCurSel(0);
 	UartState = UART_IDLE;
 	UartResp = OK;
 	return TRUE; 
@@ -456,7 +462,7 @@ void CLoaderDlg::OnCbnSelchangeComboBaud()
 void CLoaderDlg::OnCbnSelchangeComboFlashsize()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CString strFlashSize;
+	
 	int index = m_FlashSize.GetCurSel();
 	m_FlashSize.GetLBText(index, strFlashSize);
 	m_StatusBar.SetPaneText(5, _T("FlashSize:")+strFlashSize);
@@ -567,3 +573,17 @@ void CLoaderDlg::OnBnClickedButtonCloseCom()
 }
 
 
+//将对话框置于顶层
+void CLoaderDlg::OnBnClickedCheck1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (m_ifMostTopCheck.GetCheck() == 1)
+	{
+		SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+	}
+	else
+	{
+		SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+}

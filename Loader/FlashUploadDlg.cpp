@@ -69,8 +69,4 @@ void CFlashUploadDlg::OnBnClickedButtonUpload()
 	byteArray.SetAt(10, (BYTE)(b >> 16));
 	byteArray.SetAt(11, (BYTE)(b >> 24));
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
-	//g_pDownloadDlg->m_ListboxLog.AddString(_T("+ 已向MCU发送将要下载文件的类型 地址 长度信息"));
-	//g_pDownloadDlg->m_ListboxLog.SetCurSel(g_pDownloadDlg->m_ListboxLog.GetCount() - 1);
-
-
 }

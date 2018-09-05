@@ -44,7 +44,7 @@ public:
 	afx_msg void OnBnClickedButtonCln7();
 	afx_msg void OnBnClickedButtonCln8();
 	void SelcetFile(int index, int pathID, int addrID);
-	CString GetConfigInfo(CString title, CString option);
+	CStringA GetConfigInfo(CString title, CString option);
 	CButton m_check1;
 	CButton m_check2;
 	CButton m_check3;
@@ -59,7 +59,6 @@ public:
 	void GetFilePath(void);
 	int ReturnFileType(CString filePath);
 	void ThrowTips(int tipsIndex);
-	//void WriteFile(char* pszFileName);
 	CEdit m_path2;
 	CEdit m_path1;
 	CEdit m_path3;
@@ -82,7 +81,6 @@ protected:
 	void DisableWindow(void);
 	void EnableWindow(void);
 public:
-	afx_msg void OnBnClickedButtonStart();
-	afx_msg void OnBnClickedButtonStop();
 	afx_msg void OnBnClickedButtonGenerateNv();
+	void configCopy(CByteArray * configByteArray, CString option, int insertIndex);
 };

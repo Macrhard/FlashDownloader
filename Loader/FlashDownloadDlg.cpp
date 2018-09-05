@@ -14,45 +14,6 @@ CString Path[8] = { NULL };
 CString Addr[8] = { NULL };
 
 
-/*
-generate nv file 
-*/
-
-
-#define  NV_KB          (1024)
-#define  NV_MB          (NV_KB*NV_KB)
-#define  NV_FLASH_SIZE  (1*NV_MB)                     /* flash total size = 1MB */
-#define  NV_FLASH_PAGE  (4*NV_KB)                     /* flash erase size = 4KB */
-#define  NV_FLASH_ADDR  (NV_FLASH_SIZE-NV_FLASH_PAGE) /* store in last page address */
-
-typedef struct _conf_file
-{
-	unsigned short index;        /* 0,1..MAX_AP_NUM-1 */
-	unsigned char  ssid[33];     /* 32+'\0' */
-	unsigned char  pswd[33]; /* 32+'\0' */
-}config_file;
-
-#define  NV_NUM_MAX_AP     (5)
-#define  NV_LEN_CONF_FILE  (sizeof(config_file))
-#define  NV_LEN_MAC_ADDR   (18)
-#define  NV_LEN_IP_ADDR    (16)
-#define  NV_LEN_MASK_ADDR  (16)
-#define  NV_LEN_GW_ADDR    (16)
-
-typedef struct _nv_param
-{
-	unsigned char mac[NV_LEN_MAC_ADDR];  /* 12-34-56-78-9A-BC */
-	unsigned char ip[NV_LEN_IP_ADDR];    /* 192.168.0.123     */
-	unsigned char msk[NV_LEN_MASK_ADDR]; /* 255.255.255.0     */
-	unsigned char gw[NV_LEN_GW_ADDR];    /* 192.168.0.1       */
-	config_file conf_file[NV_NUM_MAX_AP];
-}nv_param;
-
-nv_param param;
-
-
-
-
 struct _fileInfo
 {
 	int fileType; //fileType 来指定下载打文件类型如 uboot，andes xip 等
@@ -323,13 +284,38 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 }
 
 //获取system.ini文件中需要的信息并返回到调用处
-CString CFlashDownloadDlg::GetConfigInfo(CString title, CString option)
+CStringA CFlashDownloadDlg:: GetConfigInfo(CString title, CString option)
 {
 
 	//将在这里添加一个函数判断是否存在文件system.ini 不存在将会按照默认格式创建一个
+	//WritePrivateProfileString
+	CFile finder;
+	BOOL ifNotFind = finder.Open(_T(".\\system.ini"),CFile::modeRead);
+	finder.Close();  //打开后必须关闭文件流，不然下面无法读取配置
+	if (!ifNotFind)
+	{
+		WritePrivateProfileString(_T("address"), _T("uboot"), _T("0x3000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("nv"), _T("0x7000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("andes"), _T("0x8000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("andes1"), _T("0x84000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("mac"), _T("12-34-56-78-AB-CD"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ip"), _T("192.168.0.123"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("mask"), _T("255.255.255.0"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("gateway"), _T("192.168.0.1"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid1"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password1"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid2"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password2"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid3"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password3"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid4"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password4"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid5"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password5"), _T(""), _T(".\\system.ini"));
+	}
 	CString buff;
 	GetPrivateProfileString(title, option, CString("NULL"), buff.GetBuffer(MAX_PATH), MAX_PATH, _T(".\\system.ini"));
-	return buff;
+	return CStringA(buff);
 }
 
 void ThrowException(int index)
@@ -413,7 +399,6 @@ DWORD CFlashDownloadDlg::ReadFile(CString filePath,int addIndex,char* combinFile
 	return head;
 
 }
-
 
 
 //保存显示在路径对话框中并且打勾的文件路径 到Path[]中
@@ -980,117 +965,81 @@ void CFlashDownloadDlg::EnableWindow(void)
 
 void CFlashDownloadDlg::OnBnClickedButtonGenerateNv()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	CFileDialog fileDlg(TRUE, _T("txt"), NULL, OFN_HIDEREADONLY, _T("文本文件(*.txt)|*.txt||"), this);
 
-	if (fileDlg.DoModal() == IDOK)
+	CByteArray configByteArray;
+	configByteArray.SetSize(568); //创建一个全为0的568字节的数组
+
+	configCopy(&configByteArray, _T("mac"), 0);
+	configCopy(&configByteArray, _T("ip"), 20);
+	configCopy(&configByteArray, _T("mask"), 36);
+	configCopy(&configByteArray, _T("gateway"), 52);
+	configCopy(&configByteArray, _T("ssid1"), 68);
+	configCopy(&configByteArray, _T("ssid2"), 168);
+	configCopy(&configByteArray, _T("ssid3"), 268);
+	configCopy(&configByteArray, _T("ssid4"), 368);
+	configCopy(&configByteArray, _T("ssid5"), 468);
+
+	CFile putOutNvFile(_T(".\\nv.bin"), CFile::modeCreate | CFile::modeWrite);
+	putOutNvFile.Write(configByteArray.GetData(), 568);
+	putOutNvFile.Close();
+	m_ListboxLog.AddString(_T("The nv.bin file has been created and filepath is .\\nv.bin"));
+	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+}
+
+void CFlashDownloadDlg::configCopy(CByteArray* configByteArray, CString option, int insertIndex)
+{
+	CStringA configCstring = GetConfigInfo(_T("config"),option);
+	if (option == _T("ssid1"))
 	{
-		memset(&param, 0, sizeof(param));
-
-		CString filePath;
-		CFile   fileHandle;
-		int     fileLen;
-		filePath = fileDlg.GetPathName();
-		fileHandle.Open(filePath, CFile::modeRead | CFile::shareDenyWrite);
-		fileLen = fileHandle.GetLength();
-
-		BYTE *fileBuf = new BYTE[fileLen];
-		if (fileBuf)
-		{
-			fileHandle.Read(fileBuf, fileLen);
-			int i, start, end;
-
-			// mac
-			for (i = 0; i<fileLen - 2; i++)
-				if (fileBuf[i] == 'm' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 'c')
-					break;
-			while (fileBuf[++i] != '=');
-			while (fileBuf[++i] == ' ');
-			start = i;
-			while (fileBuf[++i] != '\r');
-			end = i;
-			memcpy(param.mac, fileBuf + start, end - start);
-
-			// ip
-			for (i = 0; i<fileLen - 1; i++)
-				if (fileBuf[i] == 'i' && fileBuf[i + 1] == 'p')
-					break;
-			while (fileBuf[++i] != '=');
-			while (fileBuf[++i] == ' ');
-			start = i;
-			while (fileBuf[++i] != '\r');
-			end = i;
-			memcpy(param.ip, fileBuf + start, end - start);
-
-			// mask
-			for (i = 0; i<fileLen - 3; i++)
-				if (fileBuf[i] == 'm' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 's' && fileBuf[i + 3] == 'k')
-					break;
-			while (fileBuf[++i] != '=');
-			while (fileBuf[++i] == ' ');
-			start = i;
-			while (fileBuf[++i] != '\r');
-			end = i;
-			memcpy(param.msk, fileBuf + start, end - start);
-
-			// gateway
-			for (i = 0; i<fileLen - 3; i++)
-				if (fileBuf[i] == 'g' && fileBuf[i + 1] == 'a' && fileBuf[i + 2] == 't' && fileBuf[i + 3] == 'e')
-					break;
-			while (fileBuf[++i] != '=');
-			while (fileBuf[++i] == ' ');
-			start = i;
-			while (fileBuf[++i] != '\r');
-			end = i;
-			memcpy(param.gw, fileBuf + start, end - start);
-
-			for (int id = 0; id<NV_NUM_MAX_AP; id++)
-			{
-				param.conf_file[id].index = id;
-
-				// ssid
-				for (i = 0; i<fileLen - 4; i++)
-					if (fileBuf[i] == 's' && fileBuf[i + 1] == 's' && fileBuf[i + 2] == 'i' && fileBuf[i + 3] == 'd' && fileBuf[i + 4] == (id + '1'))
-						break;
-
-				while (fileBuf[i++] != '=');
-
-				if (fileBuf[i] == ' ')
-					while (fileBuf[++i] == ' ');
-				start = i;
-
-				if (fileBuf[i] != '\r')
-					while (fileBuf[++i] != '\r');
-				end = i;
-
-				memcpy(param.conf_file[id].ssid, fileBuf + start, end - start);
-
-				// password
-				for (i = 0; i<fileLen - 4; i++)
-					if (fileBuf[i] == 'w' && fileBuf[i + 1] == 'o' && fileBuf[i + 2] == 'r' && fileBuf[i + 3] == 'd' && fileBuf[i + 4] == (id + '1'))
-						break;
-
-				while (fileBuf[i++] != '=');
-
-				if (fileBuf[i] == ' ')
-					while (fileBuf[++i] == ' ');
-				start = i;
-
-				if (fileBuf[i] != '\r')
-					while (fileBuf[++i] != '\r');
-				end = i;
-
-				memcpy(param.conf_file[id].pswd, fileBuf + start, end - start);
-			}
-			delete[] fileBuf;
-		}
-
-		filePath.Replace(_T("txt"), _T("bin"));
-		fileHandle.Close();
-		fileHandle.Open(filePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite);
-		fileHandle.Write(&param, sizeof(param));
-		fileHandle.Close();
-
-		MessageBox(filePath, _T("恭喜发财, 大吉大利"), MB_OK | MB_ICONINFORMATION);
+		configByteArray->SetAt(insertIndex, (short)1);
+		int nSize = configCstring.GetLength();
+		memcpy(configByteArray->GetData()+insertIndex + 2, configCstring, nSize);
+		CStringA passwd = GetConfigInfo(_T("config"), _T("password1"));
+		nSize = passwd.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex +35, passwd, nSize);
+		return;
 	}
+	if (option == _T("ssid2"))
+	{
+		configByteArray->SetAt(insertIndex, (short)2);
+		int nSize = configCstring.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 2, configCstring, nSize);
+		CStringA passwd = GetConfigInfo(_T("config"), _T("password2"));
+		nSize = passwd.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 35, passwd, nSize);
+		return;
+	}
+	if (option == _T("ssid3"))
+	{
+		configByteArray->SetAt(insertIndex, (short)3);
+		int nSize = configCstring.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 2, configCstring, nSize);
+		CStringA passwd = GetConfigInfo(_T("config"), _T("password3"));
+		nSize = passwd.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 35, passwd, nSize);
+		return;
+	}
+	if (option == _T("ssid4"))
+	{
+		configByteArray->SetAt(insertIndex, (short)4);
+		int nSize = configCstring.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 2, configCstring, nSize);
+		CStringA passwd = GetConfigInfo(_T("config"), _T("password4"));
+		nSize = passwd.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 35, passwd, nSize);
+		return;
+	}
+	if (option == _T("ssid5"))
+	{
+		configByteArray->SetAt(insertIndex, (short)5);
+		int nSize = configCstring.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 2, configCstring, nSize);
+		CStringA passwd = GetConfigInfo(_T("config"), _T("password5"));
+		nSize = passwd.GetLength();
+		memcpy(configByteArray->GetData() + insertIndex + 35, passwd, nSize);
+		return;
+	}
+	int nSize = configCstring.GetLength();
+	memcpy(configByteArray->GetData() + insertIndex, configCstring, nSize);
+
 }
