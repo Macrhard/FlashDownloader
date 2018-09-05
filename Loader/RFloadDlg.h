@@ -24,21 +24,20 @@ protected:
 public:
 	CWinThread* pUartThread;
 	afx_msg void OnBnClickedButtonRxtestStart();
-	static UINT TestStartCmd(LPVOID pParam);
+	static UINT RxTestStartCmd(LPVOID pParam);
 	afx_msg void OnBnClickedButtonRxtestStop();
 	int TestRecv(BYTE rxdata[]);
 	CComboBox m_ComboBoxFormat;
 	CComboBox m_ComboBoxRFCH;
 	CEdit m_NUM_PKT;
 	CListBox m_ListboxLog;
-	static UINT PreTestStop(LPVOID pParam);
-	void PreTestResult();
+	static UINT RxTestStopCmd(LPVOID pParam);
+	void RxTestResult();
 
-
-	CString GetComboBoxCstring(CComboBox * comboBoxName);
 	afx_msg void OnBnClickedButtonTxtestSend();
 	afx_msg void OnBnClickedButtonTxtestStop();
 	static UINT TxtetsStopCmd(LPVOID pParam);
+	CString GetComboBoxCstring(CComboBox * comboBoxPoint, CString comboBoxName);
 	static UINT TxTestContinuousMode(LPVOID pParam);
 	static UINT TxTestPacketMode_TwentyM(LPVOID pParam);
 	static UINT TxTestPacketMode_FortyM(LPVOID pParam);
@@ -48,6 +47,7 @@ public:
 	CComboBox m_NonHt;
 	CComboBox m_ElevenB;
 	void PrintLog();
-	//CComboBox m_Config;
 	
+	afx_msg void OnCbnSelchangeComboFormat();
+	void ErroReturn();
 };
