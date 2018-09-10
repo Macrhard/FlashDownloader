@@ -83,4 +83,5 @@ protected:
 public:
 	afx_msg void OnBnClickedButtonGenerateNv();
 	void configCopy(CByteArray * configByteArray, CString option, int insertIndex);
+	void CombineFileDownload();
 };

@@ -47,7 +47,5 @@ public:
 	CComboBox m_NonHt;
 	CComboBox m_ElevenB;
 	void PrintLog();
-	
 	afx_msg void OnCbnSelchangeComboFormat();
-	void ErroReturn();
 };

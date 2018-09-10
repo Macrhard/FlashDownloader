@@ -1,6 +1,20 @@
 // FlashDownloadDlg.cpp : 实现文件
 //
 
+/*
+To be or not to be that is a question:
+Whether it's nobler in the mind to suffer
+The slings and arrows of outrageous fortune
+Or to take arms against sea of troubles
+And by opposing end them. To die--to sleep
+No more and by a sleep to say we end the heart-ache
+And the thousand natural shocks
+That flesh is to heir 'Tis a consummation
+Devoutly to be wish'd. To die,to sleep
+To sleep perchance to dream - ay, there's the rub
+*/
+
+
 #include "stdafx.h"
 #include "Loader.h"
 #include "FlashDownloadDlg.h"
@@ -275,6 +289,11 @@ void CFlashDownloadDlg::SelcetFile(int index, int pathID, int addrID)
 			SetDlgItemText(addrID, Addr[index]);
 			fileInfo[index].fileAddr = _tcstoul(Addr[index], NULL, 16);
 		}
+		else if (option.Find(_T("multibincombinefile")) != -1)
+		{
+			SetDlgItemText(pathID, path);
+			fileInfo[index].fileType = g_pMainDlg->COMBINE;
+		}
 		else
 		{
 			MessageBox(_T("File type isn't match, please check it"));
@@ -339,7 +358,6 @@ void CFlashDownloadDlg::OnBnClickedButtonClnall()
 	OnBnClickedButtonCln8();
 }
 
-
 void CFlashDownloadDlg::OnBnClickedButtonCombine()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -358,6 +376,8 @@ void CFlashDownloadDlg::OnBnClickedButtonCombine()
 	combineBinfile.Write(combineFile,head);
 	combineBinfile.Close();
 	free(combineFile);
+	m_ListboxLog.AddString(_T("multibinCombineFile.bin has been created and filepath is .\\multibinCombineFile.bin"));
+	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
 }
 
 DWORD CFlashDownloadDlg::ReadFile(CString filePath,int addIndex,char* combinFile, DWORD head)
@@ -400,15 +420,14 @@ DWORD CFlashDownloadDlg::ReadFile(CString filePath,int addIndex,char* combinFile
 
 }
 
-
 //保存显示在路径对话框中并且打勾的文件路径 到Path[]中
 void CFlashDownloadDlg::GetFilePath(void)
 {
 	if (m_check1.GetCheck() == 1)
 	{
 
-
 		m_path1.GetWindowText(Path[0]);
+		Path[0].MakeLower();
 	}
 	else
 	{
@@ -418,6 +437,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check2.GetCheck() == 1)
 	{
 		m_path2.GetWindowText(Path[1]);
+		Path[1].MakeLower();
 	}
 	else
 	{
@@ -427,6 +447,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check3.GetCheck() == 1)
 	{
 		m_path3.GetWindowText(Path[2]);
+		Path[2].MakeLower();
 	}
 	else
 	{
@@ -436,6 +457,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check4.GetCheck() == 1)
 	{
 		m_path4.GetWindowText(Path[3]);
+		Path[3].MakeLower();
 	}
 	else
 	{
@@ -445,6 +467,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check5.GetCheck() == 1)
 	{
 		m_path5.GetWindowText(Path[4]);
+		Path[4].MakeLower();
 	}
 	else
 	{
@@ -454,6 +477,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check6.GetCheck() == 1)
 	{
 		m_path6.GetWindowText(Path[5]);
+		Path[5].MakeLower();
 	}
 	else
 	{
@@ -463,6 +487,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check7.GetCheck() == 1)
 	{
 		m_path7.GetWindowText(Path[6]);
+		Path[6].MakeLower();
 	}
 	else
 	{
@@ -472,6 +497,7 @@ void CFlashDownloadDlg::GetFilePath(void)
 	if (m_check8.GetCheck() == 1)
 	{
 		m_path8.GetWindowText(Path[7]);
+		Path[7].MakeLower();
 	}
 	else
 	{
@@ -504,6 +530,7 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 	{
 		return g_pMainDlg->NV;
 	}
+
 	return 0;
 }
 
@@ -549,16 +576,20 @@ void CFlashDownloadDlg::OnBnClickedButtonDownload()
 	DisableWindow();
 	pUartThread = AfxBeginThread(UartDownload, this, THREAD_PRIORITY_NORMAL, 0, 0);
 }
-//CLoaderDlg *pMainDlg = (CLoaderDlg*)GetParent()->GetParent();
 
 //这个又长又臭的函数 迟早要重写
 UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 {
 	CFlashDownloadDlg *ptr = (CFlashDownloadDlg*)pParam;
-
+	  
 	ptr->m_ListboxLog.ResetContent();//清空Log框中的内容
-	ptr->m_ListboxLog.AddString(_T("+ Start downloading"));
+	ptr->m_ListboxLog.AddString(_T("+ Start downlogading"));
 	ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+	
+	//ptr->CombineFileDownload();
+
+	CByteArray changeBaudSync;
+	changeBaudSync.SetSize(1);
 
 	CByteArray byteArray;
 	int loop = 0;
@@ -570,7 +601,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 				int n = 0;
 				while (++n)
 				{
-					g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));
+					g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
 					if (WaitForSingleObject(g_pMainDlg->DownloadEvent, 5000) == WAIT_OBJECT_0)
 					{
 						break;
@@ -617,13 +648,37 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 					goto error_return;
 				}
 			}
-
-
 			if (loop == 1)
 			{
 				j = ptr->FindFile(_T("uboot"));
+				if (j == -1)
+				{
+					j = ptr->FindFile(_T("multibincombinefile"));
+				}
 				goto bootromdown;
 			}
+			do {
+				if (g_pMainDlg->m_ComboBoxBaud.GetCurSel() == 5)
+				{
+					changeBaudSync.SetAt(0, (BYTE)2);
+					g_pMainDlg->DownloadEvent.ResetEvent();
+					g_pMainDlg->m_MSComm.put_Output(COleVariant(changeBaudSync));
+				}
+				else
+				{
+					changeBaudSync.SetAt(0, (BYTE)1);
+					g_pMainDlg->DownloadEvent.ResetEvent();
+					g_pMainDlg->m_MSComm.put_Output(COleVariant(changeBaudSync));
+					g_pMainDlg->m_MSComm.put_Settings(_T("115200,n,8,1"));
+				}
+			WaitForSingleObject(g_pMainDlg->DownloadEvent, 5000);
+
+			} while (g_pMainDlg->rxdata[0] != (BYTE)3);
+			
+			g_pMainDlg->DownloadEvent.ResetEvent();
+			/*changeBaudSync.SetAt(0, (BYTE)4);*/
+			g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));
+			WaitForSingleObject(g_pMainDlg->DownloadEvent, 5000);
 			for (; j < 8; j++)
 			{
 
@@ -640,12 +695,29 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 
 					CString filePath;
 					filePath = Path[j];
+					if (fileInfo[j].fileType == g_pMainDlg->COMBINE)
+					{
+						ptr->CombineFileDownload(); 
+						if (loop == 1)
+						{
+							g_pMainDlg->UartState = g_pMainDlg->UART_IDLE;
+							j = 0;
+							break;
+						}
+						else
+						{
+							g_pMainDlg->UartState = g_pMainDlg->UART_SYNC;
+							continue;
+						}
+						
+					}
 					CFile binfile(filePath,CFile::modeRead | CFile::shareDenyWrite); //以只读模式打开 加读写锁
-					fileLen = binfile.GetLength(); //得到文件字节数 逻辑长度以字节表示 
+					fileLen = binfile.GetLength();									//得到文件字节数 逻辑长度以字节表示 
 					fileBuf = new BYTE[fileLen];
 					ptr->SendFileInfo(fileLen, j);
 					binfile.Read(fileBuf, fileLen);
-					binfile.Close(); //关闭文件流
+					binfile.Close();											   //关闭文件流
+					g_pMainDlg->DownloadEvent.ResetEvent();
 					if (fileBuf == NULL)
 					{
 						ptr->m_ListboxLog.AddString(_T("+ Stop download, apply for memory failed"));
@@ -654,9 +726,9 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 						binfile.Close();
 						goto error_return;
 					}
-					if (WaitForSingleObject(g_pMainDlg->DownloadEvent, INFINITE) != WAIT_OBJECT_0)
+					if (WaitForSingleObject(g_pMainDlg->DownloadEvent, 5000) != WAIT_OBJECT_0)
 					{
-						ptr->m_ListboxLog.AddString(_T("+ Stop download serial port error"));
+						ptr->m_ListboxLog.AddString(_T("+ Stop download serial port time out"));
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 						AfxMessageBox(_T("serial port time out"));
 						delete[] fileBuf;
@@ -696,12 +768,16 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 						ptr->m_ListboxLog.AddString(_T("+ andes1 code is being downloaded"));
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 					}
-					else
+					else if((enum _UartResponse)(fileInfo[j].fileType) == g_pMainDlg->NV)
 					{
-						ptr->m_ListboxLog.AddString(_T("+ 正在下载未知代码中......"));
+						ptr->m_ListboxLog.AddString(_T("+ nv code is being downloaded"));
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 					}
-						
+					else
+					{
+						ptr->m_ListboxLog.AddString(_T("+ multi-combinefilebin code is being downloaded"));
+						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
+					}
 					ptr->m_Progress.SetPos(0);
 					ptr->SendFile(fileBuf, fileLen);
 
@@ -738,10 +814,10 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 	ptr->EnableWindow();
 	g_pMainDlg->UartState = g_pMainDlg->UART_IDLE;
 	g_pMainDlg->UartResp = g_pMainDlg->OK;
-	
 	return 0;
 }
 
+//to be or not to be that is a question
 afx_msg LRESULT CFlashDownloadDlg::OnDownloadMsg(WPARAM wParam, LPARAM lParam)
 {
 	return 0;
@@ -749,9 +825,8 @@ afx_msg LRESULT CFlashDownloadDlg::OnDownloadMsg(WPARAM wParam, LPARAM lParam)
 
 void CFlashDownloadDlg::SendFileInfo(DWORD fileLen, int j)
 {
-
+	VARIANT variant_inp;	variant_inp = g_pMainDlg->m_MSComm.get_Input();
 	CByteArray byteArray;
-
 	//得到要传送的12个字节的文件信息
 	//前4字节表示数据模式
 	//中间4字节表示地址
@@ -774,10 +849,12 @@ void CFlashDownloadDlg::SendFileInfo(DWORD fileLen, int j)
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
 	m_ListboxLog.AddString(_T("+ File information has been sent to the MCU"));
 	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
+	
 }
 
 void CFlashDownloadDlg::SendFile(BYTE *fileBuf, DWORD fileLen)
 {
+
 	CByteArray byteArray;
 	DWORD len = 0;
 	while (len < fileLen)
@@ -1041,5 +1118,36 @@ void CFlashDownloadDlg::configCopy(CByteArray* configByteArray, CString option, 
 	}
 	int nSize = configCstring.GetLength();
 	memcpy(configByteArray->GetData() + insertIndex, configCstring, nSize);
+
+}
+
+void CFlashDownloadDlg::CombineFileDownload()
+{
+	int *fileSize, *fileType;
+	int index = FindFile(_T("multibincombinefile"));
+	CFile combineFile(Path[index], CFile::modeRead);
+	DWORD length = combineFile.GetLength();
+	CByteArray allCombinefilebuf;
+	allCombinefilebuf.SetSize(length);
+	combineFile.Read(allCombinefilebuf.GetData(), length);
+	combineFile.Close();
+	while (length)
+	{
+		int cnt = 0;
+		//char 初始化 申请一块4字节内存
+		CHAR* fileInfoType = (char *)malloc(4);
+		CHAR* fileInfoSize = (char *)malloc(4);
+		memcpy(fileInfoType, allCombinefilebuf.GetData(), 4);
+		memcpy(fileInfoSize, allCombinefilebuf.GetData() + 8, 4);
+
+		fileType = (int*)fileInfoType;
+		fileSize = (int*)fileInfoSize;
+		free(fileInfoType);
+		free(fileInfoSize);
+		CString binTemp;
+		memcpy(binTemp.GetBuffer(), allCombinefilebuf.GetData() + 12, *fileSize);
+		CStringArray binCodeSegment;
+		binCodeSegment.Add(binTemp);
+	}
 
 }

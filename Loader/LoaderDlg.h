@@ -52,6 +52,7 @@ public:
 		UBOOT = 0x01,	  /* uboot  */
 		ANDES = 0x03,    /* adnes  */
 		ANDES1 = 0x04, /* andes  */
+		COMBINE = 0x05,
 		FAIL = 0xFF
 	}UartResp, fileType;
 	enum _UartStatus

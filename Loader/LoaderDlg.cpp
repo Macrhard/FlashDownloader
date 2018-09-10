@@ -309,57 +309,6 @@ void CLoaderDlg::OnTimer(UINT_PTR nIDEvent)
 //遍历串口
 void CLoaderDlg::TraversalCom(void)
 {
-#if 0
-
-	int total, num, place;
-	num = m_ComboBoxCom.GetCount();
-	for (int i = num - 1; i > 0; i--)
-	{
-
-		m_ComboBoxCom.DeleteString(i);
-	}
-
-	CArray<SSerInfo, SSerInfo&> asi;
-	EnumSerialPorts(asi, FALSE);
-	total = asi.GetSize();
-
-	if (total > 0)
-	{
-		CString str;
-		for (int i = 0; i<total; i++)
-		{
-			str = asi[i].strFriendlyName;
-			place = str.Find(_T("COM"));
-			num = _ttoi(str.Mid(place + 3, 2));
-			if (num > 16)
-			{
-				continue;
-			}
-			if (num > 9)
-			{
-				str = str.Mid(place, 5);
-			}
-			else
-			{
-				str = str.Mid(place, 4);
-			}
-
-			if (asi[i].strFriendlyName.Find(_T("USB")) != -1)
-			{
-				str += _T("-USB");
-			}
-			m_ComboBoxCom.AddString(str);
-		}
-	}
-	else
-	{
-		m_ComboBoxCom.AddString(_T("没有可用的串口"));
-	}
-
-	m_ComboBoxCom.SetCurSel(0);
-
-#else
-
 	int nCount = m_ComboBoxCom.GetCount();
 	for (int i = nCount - 1; i > 0; i--)
 	{
@@ -388,7 +337,6 @@ void CLoaderDlg::TraversalCom(void)
 	{
 		m_ComboBoxCom.AddString(_T("没有可用的串口"));
 	}
-#endif
 }
 //更换设备重新遍历串口
 BOOL CLoaderDlg::OnDeviceChange(UINT nEventType, DWORD dwData)
@@ -435,7 +383,7 @@ void CLoaderDlg::OnCbnSelchangeComboCom()
 	}
 
 	//设置串口参数
-	m_MSComm.put_Settings(comBaudRate + _T(",n,8,1")); //波特率 无校验 数据位 停止位
+	m_MSComm.put_Settings(_T("57600,n,8,1")); //波特率 无校验 数据位 停止位
 	m_MSComm.put_InputMode(1); //输入方式为二级制方式
 	m_MSComm.put_InputLen(0); //设置当前缓冲区长度 
 	m_MSComm.put_InBufferSize(1024); //设置输入缓冲区
@@ -482,6 +430,7 @@ void CLoaderDlg::OnCommMscomm1()
 	//在此每次触发串口时将FlashDownload对话框的指针赋值给g_pDownloadDlg全局指针变量
 	g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
 	// TODO: 在此处添加消息处理程序代码
+	memset(rxdata, 0, 1024);
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
 	LONG  k;
