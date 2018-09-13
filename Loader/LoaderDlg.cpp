@@ -431,6 +431,7 @@ void CLoaderDlg::OnCommMscomm1()
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
 	LONG  k;
+	//m_MSComm.get_OutBufferCount()
 	if (m_MSComm.get_CommEvent() == 2) 
 	{
 		variant_inp = m_MSComm.get_Input(); 

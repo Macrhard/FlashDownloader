@@ -62,13 +62,7 @@ public:
 		ANDES1 = 0x04, /* andes  */
 		COMBINE = 0x05
 	}fileType;
-	/*enum _UartStatus
-	{
-		UART_IDLE = 0,
-		UART_SYNC = 1,
-		UART_ADDR = 2,
-		UART_CODE = 3
-	}UartState;*/
+	
 	enum _LoadType
 	{
 		Download = 0,

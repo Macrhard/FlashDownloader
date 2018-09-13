@@ -22,8 +22,14 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	CWinThread* pUartThread;
 	afx_msg void OnBnClickedButtonUpload();
+	//static UINT UartUpload(LPVOID pParam);
+	//void SaveUpLoadFile(DWORD fileLen);
 	CEdit m_Addr;
 	CEdit m_Length;
 	CEdit m_SavePath;
+	CListBox m_UploadListLogBox;
+	//afx_msg void OnBnClickedButtonOpen();
+	afx_msg void OnBnClickedButtonOpen();
 };

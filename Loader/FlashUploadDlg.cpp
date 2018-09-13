@@ -32,6 +32,7 @@ void CFlashUploadDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CFlashUploadDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_UPLOAD, &CFlashUploadDlg::OnBnClickedButtonUpload)
+	ON_BN_CLICKED(IDC_BUTTON_OPEN, &CFlashUploadDlg::OnBnClickedButtonOpen)
 END_MESSAGE_MAP()
 
 
@@ -69,4 +70,10 @@ void CFlashUploadDlg::OnBnClickedButtonUpload()
 	byteArray.SetAt(10, (BYTE)(b >> 16));
 	byteArray.SetAt(11, (BYTE)(b >> 24));
 	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
+}
+
+
+void CFlashUploadDlg::OnBnClickedButtonOpen()
+{
+	// TODO: 在此添加控件通知处理程序代码
 }
