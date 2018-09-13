@@ -194,12 +194,10 @@ BOOL CLoaderDlg::OnInitDialog()
 
 	//初始化串口相关事项
 	TraversalCom();
-
+	CreateConfigFile();
 	//波特率默认显示索引为5的项 57600 flashsize 为1MB
 	m_ComboBoxBaud.SetCurSel(5);
 	m_FlashSize.SetCurSel(0);
-	UartState = UART_IDLE;
-	UartResp = OK;
 	return TRUE; 
 }
 
@@ -275,7 +273,7 @@ void CLoaderDlg::SetDateTime()
 	month = CTime::GetCurrentTime().GetMonth();
 	day = CTime::GetCurrentTime().GetDay();
 	week = CTime::GetCurrentTime().GetDayOfWeek();
-	str.Format(_T("%d-%d-%d"), year, month, day, week);
+	str.Format(_T("%d-%d-%d"), year, month, day);
 	m_StatusBar.SetPaneText(2, str);
 
 	switch (week)
@@ -429,7 +427,6 @@ void CLoaderDlg::OnCommMscomm1()
 {
 	//在此每次触发串口时将FlashDownload对话框的指针赋值给g_pDownloadDlg全局指针变量
 	g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
-	// TODO: 在此处添加消息处理程序代码
 	memset(rxdata, 0, 1024);
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
@@ -472,21 +469,11 @@ void CLoaderDlg::OnCommMscomm1()
 			}
 			if (k != 0x5AA56996)
 			{
-				if ((k == 0xFF) || (k < 0x05))
+				if (k < 0x04)
 				{
-					switch (UartState)
-					{
-					case UART_IDLE:
-						break;
-					case UART_SYNC:
-					case UART_ADDR:
-					case UART_CODE:
-						UartResp = (enum _UartResponse)k;
-						DownloadEvent.SetEvent();
+						UartStatus = (enum _UartStatus)k;
+						ComEvent.SetEvent();
 						return;
-					default:
-						break;
-					}
 				}
 			}
 		}
@@ -495,15 +482,13 @@ void CLoaderDlg::OnCommMscomm1()
 		{
 			if (rxdata[0] == 2)
 			{
-				LoadType = SYNC;
-				UploadEvent.SetEvent();
+				ComEvent.SetEvent();
 				return;
 			}
 		}
 		else
 		{
-			//loadType = StartUpload;  //1
-			UploadEvent.SetEvent();
+			ComEvent.SetEvent();
 		}
 	}
 	
@@ -521,7 +506,6 @@ void CLoaderDlg::OnBnClickedButtonCloseCom()
 	}
 }
 
-
 //将对话框置于顶层
 void CLoaderDlg::OnBnClickedCheck1()
 {
@@ -534,5 +518,33 @@ void CLoaderDlg::OnBnClickedCheck1()
 	else
 	{
 		SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+}
+
+void CLoaderDlg::CreateConfigFile()
+{
+	CFile finder;
+	BOOL ifNotFind = finder.Open(_T(".\\system.ini"), CFile::modeRead);
+	finder.Close();  //打开后必须关闭文件流，不然下面无法读取配置
+	if (!ifNotFind)
+	{
+		WritePrivateProfileString(_T("address"), _T("uboot"), _T("0x3000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("nv"), _T("0x7000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("andes"), _T("0x8000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("address"), _T("andes1"), _T("0x84000"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("mac"), _T("12-34-56-78-AB-CD"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ip"), _T("192.168.0.123"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("mask"), _T("255.255.255.0"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("gateway"), _T("192.168.0.1"), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid1"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password1"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid2"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password2"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid3"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password3"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid4"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password4"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("ssid5"), _T(""), _T(".\\system.ini"));
+		WritePrivateProfileString(_T("config"), _T("password5"), _T(""), _T(".\\system.ini"));
 	}
 }

@@ -45,33 +45,37 @@ public:
 
 	/*BOOL mscomState = 0;*/
 	int pathCount = 0;
+
+	enum _UartStatus
+	{
+		CONTINUS_STAT = 0x00,
+		BOOTROM_STAT = 0x01,
+		UBOOT_STAT = 0x02,
+		CHGEBAUD_STAT = 0x03
+	}UartStatus;
+
 	enum _UartResponse
 	{
-		OK = 0x00,
-		NV = 0x02,
 		UBOOT = 0x01,	  /* uboot  */
+		NV = 0x02,
 		ANDES = 0x03,    /* adnes  */
 		ANDES1 = 0x04, /* andes  */
-		COMBINE = 0x05,
-		FAIL = 0xFF
-	}UartResp, fileType;
-	enum _UartStatus
+		COMBINE = 0x05
+	}fileType;
+	/*enum _UartStatus
 	{
 		UART_IDLE = 0,
 		UART_SYNC = 1,
 		UART_ADDR = 2,
 		UART_CODE = 3
-	}UartState;
+	}UartState;*/
 	enum _LoadType
 	{
 		Download = 0,
 		Upload = 1,
-		SYNC = 3,
-		StartUpload = 4
 	}LoadType;
 
-	CEvent DownloadEvent;
-	CEvent UploadEvent;
+	CEvent ComEvent;
 	CStatusBar	m_StatusBar;
 	CMscomm1 m_MSComm;
 	CFlashDownloadDlg m_flashDownloadDlg;
@@ -102,4 +106,5 @@ public:
 	afx_msg void OnBnClickedButtonCloseCom();
 	CButton m_ifMostTopCheck;
 	afx_msg void OnBnClickedCheck1();
+	void CreateConfigFile();
 };

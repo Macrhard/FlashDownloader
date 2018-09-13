@@ -3,9 +3,6 @@
 #include "afxwin.h"
 #include "afxcmn.h"
 
-
-
-
 //#include "LoaderDlg.h"
 
 // CFlashDownloadDlg ¶Ô»°¿ò
@@ -58,7 +55,6 @@ public:
 	DWORD ReadFile(CString filePath, int addIndex, char * combinFile, DWORD head);
 	void GetFilePath(void);
 	int ReturnFileType(CString filePath);
-	void ThrowTips(int tipsIndex);
 	CEdit m_path2;
 	CEdit m_path1;
 	CEdit m_path3;
@@ -75,13 +71,14 @@ public:
 	CWinThread* pUartThread;
 protected:
 	afx_msg LRESULT OnDownloadMsg(WPARAM wParam, LPARAM lParam);
-	void SendFileInfo(DWORD fileLen, int j);
-	void SendFile(BYTE * fileBuf, DWORD fileLen);
 	int FindFile(CString fileName);
 	void DisableWindow(void);
 	void EnableWindow(void);
 public:
 	afx_msg void OnBnClickedButtonGenerateNv();
 	void configCopy(CByteArray * configByteArray, CString option, int insertIndex);
-	void CombineFileDownload();
+	void SendFileInfo(int index);
+	void SendFile(BYTE * pFile, CString fileType);
+	void ReadFileToMemory();
+	CString GetFileType(BYTE fileID);
 };
