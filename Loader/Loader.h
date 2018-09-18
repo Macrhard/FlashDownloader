@@ -20,6 +20,7 @@
 
 extern CLoaderDlg *g_pMainDlg;
 extern CFlashDownloadDlg *g_pDownloadDlg;
+extern CFlashUploadDlg *g_pUploadDlg;
 
 class CLoaderApp : public CWinApp
 {

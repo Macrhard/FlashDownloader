@@ -195,8 +195,8 @@ BOOL CLoaderDlg::OnInitDialog()
 	//初始化串口相关事项
 	TraversalCom();
 	CreateConfigFile();
-	//波特率默认显示索引为5的项 57600 flashsize 为1MB
-	m_ComboBoxBaud.SetCurSel(5);
+	//波特率默认显示索引为1的项 57600 flashsize 为1MB
+	m_ComboBoxBaud.SetCurSel(0);
 	m_FlashSize.SetCurSel(0);
 	return TRUE; 
 }
@@ -295,7 +295,7 @@ void CLoaderDlg::OnTimer(UINT_PTR nIDEvent)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CString str;
 	str = ((CTime)(CTime::GetCurrentTime())).Format(_T("%H:%M:%S"));
-	m_StatusBar.SetPaneText(4, str);
+	//m_StatusBar.SetPaneText(4, str);
 	CDialogEx::OnTimer(nIDEvent);
 }
 
@@ -423,10 +423,14 @@ afx_msg LRESULT CLoaderDlg::OnMainMsg(WPARAM wParam, LPARAM lParam)
 BEGIN_EVENTSINK_MAP(CLoaderDlg, CDialogEx)
 	ON_EVENT(CLoaderDlg, IDC_MSCOMM1, 1, CLoaderDlg::OnCommMscomm1, VTS_NONE)
 END_EVENTSINK_MAP()
+
+//串口事件响应函数
 void CLoaderDlg::OnCommMscomm1()
 {
 	//在此每次触发串口时将FlashDownload对话框的指针赋值给g_pDownloadDlg全局指针变量
-	g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
+	//g_pDownloadDlg = &(g_pMainDlg->m_flashDownloadDlg);
+	//g_pUploadDlg = &(g_pMainDlg->m_flashUploadDlg);
+
 	memset(rxdata, 0, 1024);
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
@@ -441,7 +445,7 @@ void CLoaderDlg::OnCommMscomm1()
 		{
 			safearray_inp.GetElement(&k, rxdata + k); 
 		}
-		m_MSComm.put_InBufferCount(0);
+		//m_MSComm.put_InBufferCount(0);
 		k = 0x5AA56996;
 		BYTE log = 0;
 		BYTE logLen = 0;
@@ -460,6 +464,7 @@ void CLoaderDlg::OnCommMscomm1()
 					rxdata[log + 1] = ' ';
 					
 					g_pDownloadDlg->m_ListboxLog.AddString((CString)(rxdata + log));
+					g_pDownloadDlg->m_ListboxLog.SetCurSel(g_pDownloadDlg->m_ListboxLog.GetCount() - 1);
 					log += logLen + 2;
 				}
 				else
@@ -481,16 +486,37 @@ void CLoaderDlg::OnCommMscomm1()
 		//判断是上载的起始阶段还是 接收阶段
 		if (LoadType == Upload)
 		{
-			if (rxdata[0] == 2)
+			while (log < uartLen)
+			{
+				if ((rxdata[log] == 'L'))
+				{
+					logLen = rxdata[log + 1]; //每次log的第二位是log长度
+					rxdata[log + logLen] = '\0';
+					rxdata[log + 0] = '-';
+					rxdata[log + 1] = ' ';
+					g_pUploadDlg->m_UploadListLogBox.AddString((CString)(rxdata + log));
+					g_pUploadDlg->m_UploadListLogBox.SetCurSel(g_pUploadDlg->m_UploadListLogBox.GetCount() - 1);
+					log += logLen + 2;
+				}
+				else
+				{
+					ComEvent.SetEvent();
+					return;
+				}
+			}
+			ComEvent.SetEvent();
+			return;
+			/*if (rxdata[0] == 2)
 			{
 				ComEvent.SetEvent();
 				return;
 			}
+			else
+			{
+				ComEvent.SetEvent();
+			}*/
 		}
-		else
-		{
-			ComEvent.SetEvent();
-		}
+		
 	}
 	
 }
@@ -521,7 +547,7 @@ void CLoaderDlg::OnBnClickedCheck1()
 		SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
 }
-
+//创建system.ini文件
 void CLoaderDlg::CreateConfigFile()
 {
 	CFile finder;

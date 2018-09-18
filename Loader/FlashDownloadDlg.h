@@ -81,4 +81,5 @@ public:
 	void SendFile(BYTE * pFile, CString fileType);
 	void ReadFileToMemory();
 	CString GetFileType(BYTE fileID);
+	void CloseSerialPort();
 };

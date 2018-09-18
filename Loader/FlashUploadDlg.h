@@ -1,5 +1,6 @@
 #pragma once
 #include "afxwin.h"
+#include "afxcmn.h"
 
 
 // CFlashUploadDlg ¶Ô»°¿ò
@@ -24,12 +25,13 @@ protected:
 public:
 	CWinThread* pUartThread;
 	afx_msg void OnBnClickedButtonUpload();
-	//static UINT UartUpload(LPVOID pParam);
-	//void SaveUpLoadFile(DWORD fileLen);
+	afx_msg void OnBnClickedButtonOpen();
+	void ReceiveCode(int upFileLength);
+	static UINT UartUpload(LPVOID pParam);
 	CEdit m_Addr;
 	CEdit m_Length;
 	CEdit m_SavePath;
+	//CListBox m_UploadListLogBox;	
+	CProgressCtrl m_UploadProgress;
 	CListBox m_UploadListLogBox;
-	//afx_msg void OnBnClickedButtonOpen();
-	afx_msg void OnBnClickedButtonOpen();
 };

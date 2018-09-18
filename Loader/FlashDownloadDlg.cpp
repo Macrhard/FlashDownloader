@@ -538,6 +538,7 @@ int CFlashDownloadDlg::ReturnFileType(CString filePath)
 
 void CFlashDownloadDlg::OnBnClickedButtonDownload()
 {
+	g_pDownloadDlg = this;
 	// TODO: 在此添加控件通知处理程序代码
 	g_pMainDlg->ComEvent.ResetEvent();
 	g_pMainDlg->LoadType = g_pMainDlg->Download;
@@ -588,7 +589,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			while (++n)
 			{
 				g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 5000) == WAIT_OBJECT_0)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0)
 				{
 					break;
 				}
@@ -629,7 +630,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 
 			if (loopFlag == UBOOT_STAT)
 			{
-				if (g_pMainDlg->m_ComboBoxBaud.GetCurSel() == 6)
+				if (g_pMainDlg->m_ComboBoxBaud.GetCurSel() == 1)
 				{
 					g_pMainDlg->ComEvent.ResetEvent();
 					changeBaudSync.SetAt(0, 1);
@@ -642,7 +643,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 					changeBaudSync.SetAt(0, 2);
 					g_pMainDlg->m_MSComm.put_Output(COleVariant(changeBaudSync));
 				}
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 5000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x03)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x03)
 				{
 					throw _T("Change baud rate failed");
 				}
@@ -651,9 +652,9 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			{
 				g_pMainDlg->ComEvent.ResetEvent();
 				g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 5000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x02)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x02)
 				{
-					throw _T("Change baud rate failed");
+					throw _T("orry, handshake failed, after change baud rate ");
 				}
 			}
 
@@ -665,7 +666,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			
 				i = ubootFlag;
 				ptr->SendFileInfo(i);
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 7000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus == 0x00)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus == 0x00)
 				{
 					//GetFileType((BYTE)*pInfo[i])
 					ptr->SendFile(pCode[i], ptr->GetFileType((BYTE)*pInfo[i]));
@@ -679,7 +680,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			for (; i < totalFileCount; i++)
 			{
 				ptr->SendFileInfo(i);
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 7000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x00)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x00)
 				{
 					throw _T("Response erro");
 				}
@@ -691,7 +692,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 		free(pInfo);
 		ptr->m_ListboxLog.AddString(_T("+ Download completion"));
 		ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
-		g_pMainDlg->OnBnClickedButtonCloseCom();
+		ptr->CloseSerialPort();
 		ptr->EnableWindow();
 		return 0;
 	}
@@ -702,7 +703,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 		ptr->MessageBox(msg, _T("Tips"), MB_OK | MB_ICONWARNING);	
 		free(pCode);
 		free(pInfo);
-		g_pMainDlg->OnBnClickedButtonCloseCom();
+		ptr->CloseSerialPort();
 		ptr->EnableWindow();
 		return 0;
 	}
@@ -712,37 +713,6 @@ afx_msg LRESULT CFlashDownloadDlg::OnDownloadMsg(WPARAM wParam, LPARAM lParam)
 {
 	return 0;
 }
-
-//void CFlashDownloadDlg::SendFileInfo(DWORD fileLen, int j)
-//{
-//	VARIANT variant_inp;
-//	variant_inp = g_pMainDlg->m_MSComm.get_Input();
-//
-//	CByteArray byteArray;
-//	//得到要传送的12个字节的文件信息
-//	//前4字节表示数据模式
-//	//中间4字节表示地址
-//	//最后4字节表示文件字节长度
-//	//binfile.Read(fileBuf, fileLen);//向提供缓冲器 存入从文件中读取的数据 即将文件数据存到内存中 fileLen可以读取的最大字符数
-//	byteArray.RemoveAll(); //从该数组中删除所有指针 释放所有用于指针存储所占用的内存
-//	byteArray.SetSize(12); //设置数组元素的个数
-//	byteArray.SetAt(0, (BYTE)(fileInfo[j].fileType));  // 给数组中指定下标的元素赋值，但不能动态增长数组
-//	byteArray.SetAt(1, (BYTE)0);
-//	byteArray.SetAt(2, (BYTE)0);
-//	byteArray.SetAt(3, (BYTE)0);
-//	byteArray.SetAt(4, (BYTE)(fileInfo[j].fileAddr));
-//	byteArray.SetAt(5, (BYTE)(fileInfo[j].fileAddr >> 8));
-//	byteArray.SetAt(6, (BYTE)(fileInfo[j].fileAddr >> 16));
-//	byteArray.SetAt(7, (BYTE)(fileInfo[j].fileAddr >> 24));
-//	byteArray.SetAt(8, (BYTE)(fileLen));
-//	byteArray.SetAt(9, (BYTE)(fileLen >> 8));
-//	byteArray.SetAt(10, (BYTE)(fileLen >> 16));
-//	byteArray.SetAt(11, (BYTE)(fileLen >> 24));
-//	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
-//	m_ListboxLog.AddString(_T("+ File information has been sent to the MCU"));
-//	m_ListboxLog.SetCurSel(m_ListboxLog.GetCount() - 1);
-//	
-//}
 
 int CFlashDownloadDlg::FindFile(CString fileName)
 {
@@ -826,7 +796,7 @@ void CFlashDownloadDlg::DisableWindow(void)
 	GetDlgItem(IDC_BUTTON_OPEN6)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_OPEN7)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_OPEN8)->EnableWindow(FALSE);
-
+	GetDlgItem(IDC_BUTTON_GENERATE_NV)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN1)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN2)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN3)->EnableWindow(FALSE);
@@ -835,7 +805,7 @@ void CFlashDownloadDlg::DisableWindow(void)
 	GetDlgItem(IDC_BUTTON_CLN6)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(FALSE);
-
+	GetDlgItem(IDC_BUTTON_GENERATE_NV)->EnableWindow(TRUE);
 }
 
 void CFlashDownloadDlg::EnableWindow(void)
@@ -880,7 +850,7 @@ void CFlashDownloadDlg::EnableWindow(void)
 	GetDlgItem(IDC_BUTTON_OPEN6)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_OPEN7)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_OPEN8)->EnableWindow(TRUE);
-
+	GetDlgItem(IDC_BUTTON_GENERATE_NV)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN1)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN2)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_CLN3)->EnableWindow(TRUE);
@@ -972,104 +942,6 @@ void CFlashDownloadDlg::configCopy(CByteArray* configByteArray, CString option, 
 
 }
 
-//void CFlashDownloadDlg::CombineFileDownload(int loop)
-//{
-//	BYTE ubootFlag = 0;
-//	int index = FindFile(_T("multibin"));
-//	DWORD totalCodeSize = 0, shiftLength = 0;
-//	CFile combineFile(Path[index], CFile::modeRead);
-//	DWORD fileLength = combineFile.GetLength();
-//	BYTE **pCode = (BYTE**)malloc(sizeof(BYTE*)*20);
-//	BYTE **pInfo = (BYTE**)malloc(sizeof(BYTE*) * 20);
-//	UINT *fileSize = (UINT *)malloc(4),  nSize = 0;
-//	BYTE *fileBuffer = NULL;
-//	fileBuffer = new BYTE[fileLength];
-//	combineFile.Read(fileBuffer, fileLength);
-//	int total = 0;
-//	for (int i =0;fileLength > shiftLength; i++)
-//	{
-//		BYTE *fileInfo = NULL;
-//		fileInfo = new BYTE[12];
-//		memcpy(fileInfo, fileBuffer + shiftLength, 12);
-//		memcpy(fileSize, fileBuffer + shiftLength + 8, 4);
-//		nSize = *fileSize;
-//		pInfo[i] = fileInfo;
-//		BYTE *tempCode =  new BYTE[nSize];
-//		pCode[i] = tempCode;
-//		memcpy(tempCode, fileBuffer + shiftLength + 12, nSize);
-//		shiftLength = shiftLength + 12 + nSize;
-//		if (BYTE(*fileInfo) == 1)
-//		{
-//			ubootFlag = i;
-//		}
-//		delete[] tempCode, fileInfo;
-//		total = i;
-//		
-//
-//		
-//	}	
-//	delete[] fileBuffer;
-//	for (int i = 0; i < total; i++)
-//	{
-//		if (loop == 1)
-//		{
-//			i = ubootFlag;
-//			ConbineSendFileInfo(pInfo[i]);
-//			if (WaitForSingleObject(g_pMainDlg->DownloadEvent, 7000) == WAIT_OBJECT_0)
-//			{
-//				ConbineSendFile(pCode[i]);
-//				break;
-//			}
-//			
-//		}
-//		ConbineSendFileInfo(pInfo[i]);
-//		if (WaitForSingleObject(g_pMainDlg->DownloadEvent, 7000) == WAIT_OBJECT_0)
-//		{
-//			ConbineSendFile(pCode[i]);
-//		}
-//	}
-//	
-//	//UINT *fileSize = (UINT *)malloc(4), *fileType, nSize = 0, nType = 0;
-//	//int index = FindFile(_T("multibin"));
-//	//DWORD dwtotalCodeSize = 0, shiftLength = 0;
-//	//CFile combineFile(Path[index], CFile::modeRead);
-//	//DWORD length = combineFile.GetLength();
-//	//CByteArray allCombinefilebuf;
-//	//allCombinefilebuf.RemoveAll();
-//	//allCombinefilebuf.SetSize(length);
-//	//combineFile.Read(allCombinefilebuf.GetData(), length);
-//	//combineFile.Close();
-//	//*fileSize = 0;
-//	//while(length > (shiftLength + 12 + nSize))
-//	//{
-//	//	int cnt = 0;
-//	//	//char 初始化 申请一块4字节内存
-//	//	/*p = allCombinefilebuf.GetData();
-//	//	
-//	//	p = p + cnt * 12 + dwtotalCodeSize;*/
-//	//	dwtotalCodeSize = dwtotalCodeSize + *fileSize;
-//	//	shiftLength = dwtotalCodeSize + cnt * 12;
-//
-//
-//	//	CHAR* fileInfoType = (char *)malloc(4);
-//	//	CHAR* fileInfoSize = (char *)malloc(4);
-//	//	memcpy(fileInfoType, allCombinefilebuf.GetData()+ shiftLength, 4);
-//	//	memcpy(fileInfoSize, allCombinefilebuf.GetData() + shiftLength + 8, 4);
-//
-//	//	fileType = (UINT*)fileInfoType;
-//	//	nType = *fileType;
-//	//	fileSize = (UINT*)fileInfoSize;
-//	//	nSize = *fileSize;
-//	//	free(fileInfoType);
-//	//	free(fileInfoSize);
-//	//	CString binTemp;
-//	//	memcpy(binTemp.GetBuffer(), allCombinefilebuf.GetData() + 12, nSize);
-//	//	CStringArray binCodeSegment;
-//	//	binCodeSegment.Add(binTemp);
-//	//	length = length - shiftLength;
-//	//}
-//
-//}
 
 void CFlashDownloadDlg::SendFileInfo(int index)
 {
@@ -1100,7 +972,7 @@ void CFlashDownloadDlg::SendFile(BYTE *pFile,CString fileType)
 		g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArray));
 		m_Progress.SetStep(block);
 		m_Progress.StepIt();
-		if (WaitForSingleObject(g_pMainDlg->ComEvent, 7000) != WAIT_OBJECT_0) //INFINITE
+		if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) != WAIT_OBJECT_0) //INFINITE
 		{
 			throw _T("Serial port time out");
 		}
@@ -1115,7 +987,7 @@ void CFlashDownloadDlg::SendFile(BYTE *pFile,CString fileType)
 
 void CFlashDownloadDlg::ReadFileToMemory()
 {
-	int fileCount = 0;
+	/*int fileCount = 0;
 	
 	for (int cnt = 0; cnt < 8; cnt++)
 	{
@@ -1123,20 +995,23 @@ void CFlashDownloadDlg::ReadFileToMemory()
 		{
 			fileCount++;
 		}
-	}
+	}*/
 	int i = 0;
-	for (int j = 0; j < fileCount; i++,j++)
+	for (int j = 0; j < 8;j++)
 	{
 		DWORD  shiftLength = 0;
+		if (Path[j] == _T(""))
+		{
+			continue;
+		}
 		CFile fileRead(Path[j], CFile::modeRead);
 		DWORD fileLength = fileRead.GetLength();
 		BYTE *fileBuffer = new BYTE[fileLength];
 		fileRead.Read(fileBuffer, fileLength);
-		if (Path[i].Find(_T("multibin")) != -1)
-		{
-			
+		if (Path[j].Find(_T("multibin")) != -1)
+		{		
 			UINT *fileSize = (UINT *)malloc(4), nSize = 0;
-			for (; fileLength > shiftLength;i++)
+			for (; fileLength > shiftLength;)
 			{
 				pInfo[i] = (BYTE*)malloc(12);
 				memcpy(pInfo[i], fileBuffer + shiftLength, 12);
@@ -1149,8 +1024,8 @@ void CFlashDownloadDlg::ReadFileToMemory()
 				{
 					ubootFlag = i;
 				}
+				i++;
 			}
-			i--;
 			continue;
 		}
 		if ((BYTE)fileInfo[j].fileType == 1)
@@ -1176,6 +1051,7 @@ void CFlashDownloadDlg::ReadFileToMemory()
 		memcpy(pInfo[i], byteArray.GetData(), 12);
 		pCode[i] = (BYTE*)malloc(sizeof(BYTE)*fileLength);
 		memcpy(pCode[i], fileBuffer, fileLength);
+		i++;
 	}
 	totalFileCount = i;
 }
@@ -1199,5 +1075,16 @@ CString CFlashDownloadDlg::GetFileType(BYTE fileID)
 	default:
 		return _T("Unknown");
 		break;
+	}
+}
+
+void CFlashDownloadDlg::CloseSerialPort()
+{
+	if (g_pMainDlg->m_MSComm.get_PortOpen()) //如果串口是打开的返回 1 ，关闭返回 0    则关闭串口 
+	{
+		g_pMainDlg->m_MSComm.put_PortOpen(FALSE);
+		g_pMainDlg->oldComNum = 0;
+		g_pMainDlg->m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
+		g_pMainDlg->m_StatusBar.SetPaneText(0, _T("COM??"));
 	}
 }
