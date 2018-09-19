@@ -581,6 +581,7 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 	int loopFlag = 1;
 	CByteArray byteArrayEnd;
 	byteArrayEnd.SetSize(12);
+
 	try
 	{
 		while (loopFlag == BOOTROM_STAT)

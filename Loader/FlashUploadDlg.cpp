@@ -50,7 +50,7 @@ void CFlashUploadDlg::OnBnClickedButtonUpload()
 	logStat = 1;
 	g_pUploadDlg = this;
 	m_UploadListLogBox.ResetContent();//清空Log框中的内容
-	m_UploadListLogBox.AddString(_T("+ ................"));
+	m_UploadListLogBox.AddString(_T("..........................."));
 	m_UploadListLogBox.SetCurSel(m_UploadListLogBox.GetCount() - 1);
 	g_pMainDlg->ComEvent.ResetEvent();
 	g_pMainDlg->LoadType = g_pMainDlg->Upload;
@@ -80,13 +80,13 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 			g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
 			ptr->m_UploadListLogBox.AddString(_T("+ Handshaking ..."));
 			ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
-			if (WaitForSingleObject(g_pMainDlg->ComEvent, 5000) == WAIT_OBJECT_0)
+			if (WaitForSingleObject(g_pMainDlg->ComEvent, 2000) == WAIT_OBJECT_0)
 			{
 				break;
 			}
 			else
 			{
-				if (n > 3)
+				if (n > 5)
 				{
 					ptr->m_UploadListLogBox.AddString(_T("+ Stop upload, serial port timeout"));
 					ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
@@ -188,6 +188,9 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 
 		return 0;
 	}
+	CByteArray byteArrayEnd;
+	byteArrayEnd.SetSize(12);
+	g_pMainDlg->m_MSComm.put_Output(COleVariant(byteArrayEnd));
 	ptr->m_UploadListLogBox.AddString(_T("+ Upload Complete  !!!"));
 	ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
 
@@ -198,7 +201,6 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		g_pMainDlg->m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
 		g_pMainDlg->m_StatusBar.SetPaneText(0, _T("COM??"));
 	}
-
 	return 0;
 }
 
