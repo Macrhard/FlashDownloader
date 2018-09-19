@@ -21,6 +21,7 @@
 extern CLoaderDlg *g_pMainDlg;
 extern CFlashDownloadDlg *g_pDownloadDlg;
 extern CFlashUploadDlg *g_pUploadDlg;
+extern BOOL  logStat;
 
 class CLoaderApp : public CWinApp
 {

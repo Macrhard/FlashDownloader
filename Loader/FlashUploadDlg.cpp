@@ -47,8 +47,12 @@ END_MESSAGE_MAP()
 
 void CFlashUploadDlg::OnBnClickedButtonUpload()
 {
-	g_pMainDlg->ComEvent.ResetEvent();
+	logStat = 1;
+	g_pUploadDlg = this;
 	m_UploadListLogBox.ResetContent();//清空Log框中的内容
+	m_UploadListLogBox.AddString(_T("+ ................"));
+	m_UploadListLogBox.SetCurSel(m_UploadListLogBox.GetCount() - 1);
+	g_pMainDlg->ComEvent.ResetEvent();
 	g_pMainDlg->LoadType = g_pMainDlg->Upload;
 	pUartThread = AfxBeginThread(UartUpload, this, THREAD_PRIORITY_NORMAL, 0, 0);
 }
@@ -57,8 +61,7 @@ void CFlashUploadDlg::OnBnClickedButtonUpload()
 UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 {
 	
-	WaitForSingleObject(g_pMainDlg->ComEvent, 5000); //等待log
-
+	WaitForSingleObject(g_pMainDlg->ComEvent, 8000); //等待log
 	CByteArray changeBaudSync;
 	changeBaudSync.SetSize(1);
 	CFlashUploadDlg *ptr = (CFlashUploadDlg*)pParam;
@@ -72,6 +75,7 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		int n = 0;
 		while (++n)
 		{
+			logStat = 0;
 			g_pMainDlg->ComEvent.ResetEvent();
 			g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
 			ptr->m_UploadListLogBox.AddString(_T("+ Handshaking ..."));
@@ -121,9 +125,11 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		CString addr;
 		ptr->m_Addr.GetWindowTextW(addr);
 		DWORD upAddr = _tcstoul(addr, NULL, 16);
+		upAddr -= 4;
 		CString length;
 		ptr->m_Length.GetWindowTextW(length);
-		int upFileLength = _tcstoul(length, NULL, 10);
+		int upFileLength = _tcstoul(length, NULL, NULL);
+		upFileLength += 4;
 		CString	path;
 		ptr->m_SavePath.GetWindowTextW(path);
 		CByteArray byteArray;
@@ -147,7 +153,7 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
 
 		g_pMainDlg->ComEvent.ResetEvent();
-		if (WaitForSingleObject(g_pMainDlg->ComEvent, 50000) != WAIT_OBJECT_0)
+		if (WaitForSingleObject(g_pMainDlg->ComEvent, 80000) != WAIT_OBJECT_0)  //等待MCU回复确认上载信息
 		{
 			throw _T("+ Time out");
 		}
@@ -155,11 +161,15 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		{
 			throw _T("+ Upload infomation erro");
 		}
+
 		g_pMainDlg->ComEvent.ResetEvent();
 		CByteArray zeroByte;
 		zeroByte.SetSize(1);
 		zeroByte.SetAt(0, 0);
-		g_pMainDlg->m_MSComm.put_Output(COleVariant(zeroByte));
+		ptr->m_UploadProgress.SetPos(0);
+		ptr->m_UploadProgress.SetRange32(0, upFileLength);
+		g_pMainDlg->m_MSComm.put_Output(COleVariant(zeroByte)); //回复00确认下栽
+
 		ptr->ReceiveCode(upFileLength);
 	}
 	catch (const WCHAR * msg)
@@ -167,10 +177,28 @@ UINT CFlashUploadDlg::UartUpload(LPVOID pParam)
 		ptr->m_UploadListLogBox.AddString(msg);
 		ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
 		ptr->MessageBox(msg, _T("Tips"), MB_OK | MB_ICONWARNING);
+
+		if (g_pMainDlg->m_MSComm.get_PortOpen()) //如果串口是打开的返回 1 ，关闭返回 0    则关闭串口 
+		{
+			g_pMainDlg->m_MSComm.put_PortOpen(FALSE);
+			g_pMainDlg->oldComNum = 0;
+			g_pMainDlg->m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
+			g_pMainDlg->m_StatusBar.SetPaneText(0, _T("COM??"));
+		}
+
 		return 0;
 	}
-	ptr->m_UploadListLogBox.AddString(_T("+ Upload Complete!!!"));
+	ptr->m_UploadListLogBox.AddString(_T("+ Upload Complete  !!!"));
 	ptr->m_UploadListLogBox.SetCurSel(ptr->m_UploadListLogBox.GetCount() - 1);
+
+	if (g_pMainDlg->m_MSComm.get_PortOpen()) //如果串口是打开的返回 1 ，关闭返回 0    则关闭串口 
+	{
+		g_pMainDlg->m_MSComm.put_PortOpen(FALSE);
+		g_pMainDlg->oldComNum = 0;
+		g_pMainDlg->m_ComboBoxCom.SetCurSel(0); //让ComboBox_Com显示第0项内容
+		g_pMainDlg->m_StatusBar.SetPaneText(0, _T("COM??"));
+	}
+
 	return 0;
 }
 
@@ -185,7 +213,7 @@ void CFlashUploadDlg::OnBnClickedButtonOpen()
 	//GetDlgItem(h, IDD_DIALOG_FLASHUPLOAD);
 	/*g_pUploadDlg = (CFlashUploadDlg*)CWnd::GetDlgItem(IDD_DIALOG_FLASHUPLOAD);*/
 
-	g_pUploadDlg = this;
+	
 	CString szFilters = _T("二进制文件(*.bin)|*.bin||");
 	CFileDialog Filedlg(0, _T("bin"), _T("UploadFile"), OFN_HIDEREADONLY | OFN_EXPLORER, szFilters, 0);
 	if (Filedlg.DoModal() == IDOK)
@@ -198,9 +226,6 @@ void CFlashUploadDlg::OnBnClickedButtonOpen()
 
 void CFlashUploadDlg::ReceiveCode(int upFileLength)
 {
-	m_UploadProgress.SetPos(0);
-	m_UploadProgress.SetRange32(0, upFileLength);
-	
 	CString path;
 	m_SavePath.GetWindowTextW(path);
 	CFile upFile(path, CFile::modeCreate | CFile::modeWrite);
@@ -209,10 +234,18 @@ void CFlashUploadDlg::ReceiveCode(int upFileLength)
 	{
 		if ((WaitForSingleObject(g_pMainDlg->ComEvent, 5000) == WAIT_OBJECT_0))
 		{	
-			receiveTotalLength += g_pMainDlg->uartLen;
+			
 			BYTE *fileBuffer = new BYTE[g_pMainDlg->uartLen];
 			memcpy(fileBuffer, g_pMainDlg->rxdata, g_pMainDlg->uartLen);
-			upFile.Write(fileBuffer, g_pMainDlg->uartLen);
+			if (!receiveTotalLength)
+			{
+				upFile.Write(fileBuffer+4, g_pMainDlg->uartLen-4);
+			}
+			else
+			{
+				upFile.Write(fileBuffer, g_pMainDlg->uartLen);
+			}
+			receiveTotalLength += g_pMainDlg->uartLen;
 			delete[] fileBuffer;
 			m_UploadProgress.SetStep(g_pMainDlg->uartLen);
 			m_UploadProgress.StepIt();

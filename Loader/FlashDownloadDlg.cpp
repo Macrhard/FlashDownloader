@@ -589,13 +589,13 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			while (++n)
 			{
 				g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 2000) == WAIT_OBJECT_0)
 				{
 					break;
 				}
 				else
 				{
-					if (n > 3)
+					if (n > 5)
 					{
 						ptr->m_ListboxLog.AddString(_T("+ Stop upload, serial port timeout"));
 						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);

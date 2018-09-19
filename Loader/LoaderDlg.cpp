@@ -19,7 +19,7 @@ using namespace std;
 #endif
 //全局指针用来传递主对话的信息
 CLoaderDlg *g_pMainDlg = NULL;
-
+BOOL logStat = 0;
 static UINT indicators[] =
 {
 	ID_INDICATOR_COM,
@@ -72,8 +72,9 @@ CLoaderDlg::CLoaderDlg(CWnd* pParent /*=NULL*/)
 	//将主对话框的指针赋值给g_pMianDlg
 	g_pMainDlg = this;
 	//默认波特率57600
-	comBaudRate = _T("57600");
+	comBaudRate = _T("115200");
 	strFlashSize = _T("1MB");
+	logStat = 0;
 }
 
 void CLoaderDlg::DoDataExchange(CDataExchange* pDX)
@@ -196,7 +197,7 @@ BOOL CLoaderDlg::OnInitDialog()
 	TraversalCom();
 	CreateConfigFile();
 	//波特率默认显示索引为1的项 57600 flashsize 为1MB
-	m_ComboBoxBaud.SetCurSel(0);
+	m_ComboBoxBaud.SetCurSel(1);
 	m_FlashSize.SetCurSel(0);
 	return TRUE; 
 }
@@ -435,8 +436,8 @@ void CLoaderDlg::OnCommMscomm1()
 	VARIANT variant_inp;
 	COleSafeArray safearray_inp;
 	LONG  k;
-	//m_MSComm.get_OutBufferCount()
-	if (m_MSComm.get_CommEvent() == 2) 
+
+	if (m_MSComm.get_CommEvent() == 2) //等于2表示接收缓冲区有字符
 	{
 		variant_inp = m_MSComm.get_Input(); 
 		safearray_inp = variant_inp; 
@@ -486,7 +487,7 @@ void CLoaderDlg::OnCommMscomm1()
 		//判断是上载的起始阶段还是 接收阶段
 		if (LoadType == Upload)
 		{
-			while (log < uartLen)
+			while ((log < uartLen) && (logStat == 1)) //logStat = 1 打印log阶段
 			{
 				if ((rxdata[log] == 'L'))
 				{
