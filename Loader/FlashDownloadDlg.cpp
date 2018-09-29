@@ -22,7 +22,7 @@ To sleep perchance to dream - ay, there's the rub
 #include "malloc.h"
 
 #define BOOTROM_STAT 0x01
-#define UBOOT_STAT 0x02
+#define FLASH_STAT 0x02
 
 using namespace std;
 
@@ -572,6 +572,7 @@ void CFlashDownloadDlg::OnBnClickedButtonDownload()
 //已经重写
 UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 {
+	Sleep(300);
 	CFlashDownloadDlg *ptr = (CFlashDownloadDlg*)pParam;
 	ptr->m_ListboxLog.ResetContent();//清空Log框中的内容
 	ptr->m_ListboxLog.AddString(_T("+ Start downlogading"));
@@ -590,17 +591,15 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 			while (++n)
 			{
 				g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));  //57600	115200
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 2000) == WAIT_OBJECT_0)
+				if (WaitForSingleObject(g_pMainDlg->ComEvent, 1000) == WAIT_OBJECT_0)
 				{
 					break;
 				}
 				else
 				{
-					if (n > 5)
+					if (n > 20)
 					{
-						ptr->m_ListboxLog.AddString(_T("+ Stop upload, serial port timeout"));
-						ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
-						throw _T("Sorry, serial port timeout");
+						throw _T("+ Stop upload Sorry, serial port timeout");
 					}
 					ptr->m_ListboxLog.AddString(_T("+ Handshaking......"));
 					ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
@@ -615,8 +614,8 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 				ptr->m_ListboxLog.AddString(_T("+ MCU in bootrom mode, uboot code will be downloaded"));
 				ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 				break;
-			case UBOOT_STAT:
-				loopFlag = UBOOT_STAT;
+			case FLASH_STAT:
+				loopFlag = FLASH_STAT;
 				ptr->m_ListboxLog.AddString(_T("+ Handshake successfull"));
 				ptr->m_ListboxLog.SetCurSel(ptr->m_ListboxLog.GetCount() - 1);
 				ptr->m_ListboxLog.AddString(_T("+ MCU in uboot mode, code will be downloaded"));
@@ -629,7 +628,29 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 				throw _T("Sorry, handshake failed");
 			}
 
-			if (loopFlag == UBOOT_STAT)
+			//BOOTROM_STAT 阶段 查找uboot并进行下载
+			if (loopFlag == BOOTROM_STAT/*&& (BYTE(*pInfo[ubootFlag]) == 0x1)*/)
+			{
+				if ((BYTE(*pInfo[ubootFlag]) == 0x1))
+				{
+					ptr->SendFileInfo(ubootFlag);
+					if ((WaitForSingleObject(g_pMainDlg->ComEvent, 15000) == WAIT_OBJECT_0) && (g_pMainDlg->UartStatus == 0x00))
+					{
+						ptr->SendFile(pCode[ubootFlag], ptr->GetFileType((BYTE)*pInfo[ubootFlag]));
+						continue;
+					}
+					else
+					{
+						throw _T("### Response erro");
+					}
+				}
+				else
+				{
+					throw _T("### Starting from bootrom requires uboot file");
+				}
+			}
+
+			if (loopFlag == FLASH_STAT)
 			{
 				if (g_pMainDlg->m_ComboBoxBaud.GetCurSel() == 1)
 				{
@@ -644,46 +665,27 @@ UINT CFlashDownloadDlg::UartDownload(LPVOID pParam)
 					changeBaudSync.SetAt(0, 2);
 					g_pMainDlg->m_MSComm.put_Output(COleVariant(changeBaudSync));
 				}
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x03)
+				if ((WaitForSingleObject(g_pMainDlg->ComEvent, 15000) != WAIT_OBJECT_0) || (g_pMainDlg->UartStatus != 0x03))
 				{
 					throw _T("Change baud rate failed");
 				}
 			}
-			if (loopFlag == UBOOT_STAT)
+			if (loopFlag == FLASH_STAT)
 			{
 				g_pMainDlg->ComEvent.ResetEvent();
 				g_pMainDlg->m_MSComm.put_Output(COleVariant(_T("cnys")));
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x02)
+				if ((WaitForSingleObject(g_pMainDlg->ComEvent, 15000) != WAIT_OBJECT_0) || (g_pMainDlg->UartStatus != 0x02))
 				{
-					throw _T("orry, handshake failed, after change baud rate ");
+					throw _T("Sorry, handshake failed, after change baud rate ");
 				}
 			}
 
-			int i = 0;
-
-			//BOOTROM_STAT  阶段下载uboot
-			if (loopFlag == BOOTROM_STAT)
-			{
-			
-				i = ubootFlag;
-				ptr->SendFileInfo(i);
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus == 0x00)
-				{
-					//GetFileType((BYTE)*pInfo[i])
-					ptr->SendFile(pCode[i], ptr->GetFileType((BYTE)*pInfo[i]));
-					continue;
-				}
-				else
-				{
-					throw _T("Response erro");
-				}
-			}
-			for (; i < totalFileCount; i++)
+			for (int i = 0; i < totalFileCount; i++)
 			{
 				ptr->SendFileInfo(i);
-				if (WaitForSingleObject(g_pMainDlg->ComEvent, 8000) == WAIT_OBJECT_0 && g_pMainDlg->UartStatus != 0x00)
+				if ((WaitForSingleObject(g_pMainDlg->ComEvent, 180000) != WAIT_OBJECT_0) || (g_pMainDlg->UartStatus != 0x00))
 				{
-					throw _T("Response erro");
+					throw _T("### Sorry time out");
 				}
 				ptr->SendFile(pCode[i], ptr->GetFileType((BYTE)*pInfo[i]));
 			}
@@ -806,7 +808,6 @@ void CFlashDownloadDlg::DisableWindow(void)
 	GetDlgItem(IDC_BUTTON_CLN6)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN7)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_CLN8)->EnableWindow(FALSE);
-	GetDlgItem(IDC_BUTTON_GENERATE_NV)->EnableWindow(TRUE);
 }
 
 void CFlashDownloadDlg::EnableWindow(void)

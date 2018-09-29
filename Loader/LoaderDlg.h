@@ -50,7 +50,7 @@ public:
 	{
 		CONTINUS_STAT = 0x00,
 		BOOTROM_STAT = 0x01,
-		UBOOT_STAT = 0x02,
+		FLASH_STAT = 0x02,
 		CHGEBAUD_STAT = 0x03
 	}UartStatus;
 
